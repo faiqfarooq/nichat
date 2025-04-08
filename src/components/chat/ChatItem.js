@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
+import Avatar from '@/components/ui/Avatar';
 
 const ChatItem = ({ chat, active, currentUserId }) => {
   const router = useRouter();
@@ -98,17 +99,13 @@ const ChatItem = ({ chat, active, currentUserId }) => {
       }`}
     >
       <div className="relative">
-        {isGroup ? (
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold">
-            {chat.name?.charAt(0).toUpperCase() || 'G'}
-          </div>
-        ) : (
-          <img 
-            src={displayAvatar}
-            alt={displayName}
-            className="w-12 h-12 rounded-full object-cover border border-gray-700" 
+        <div className="border-2 border-gray-700 shadow-md rounded-full">
+          <Avatar 
+            src={isGroup ? chat.groupAvatar : otherUser?.avatar}
+            name={isGroup ? chat.name : otherUser?.name}
+            size="lg"
           />
-        )}
+        </div>
         
         {!isGroup && isOnline && (
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-lighter"></span>

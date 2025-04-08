@@ -114,13 +114,31 @@ const ChatWindow = ({ chatId }) => {
       
       // Notify other users that typing has stopped
       if (socket) {
-        socket.emit('stopTyping', { chatId });
+        socket.emit('typing:stop', { chatId });
       }
       
       // Clear reply to
       const actualReplyTo = replyToId || (replyTo ? replyTo._id : null);
       setReplyTo(null);
       
+      // Send message via socket if available
+      if (socket && socket.connected) {
+        socket.emit('message:new', {
+          chatId,
+          content,
+          contentType,
+          replyTo: actualReplyTo,
+        });
+        
+        // Focus the input field again
+        if (messageInputRef.current) {
+          messageInputRef.current.focus();
+        }
+        
+        return;
+      }
+      
+      // Fallback to API if socket is not available
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: {
@@ -165,7 +183,7 @@ const ChatWindow = ({ chatId }) => {
       
       // Emit typing event
       if (socket) {
-        socket.emit('typing', { chatId, userId: session?.user?.id });
+        socket.emit('typing:start', { chatId });
       }
     }
     
@@ -180,7 +198,7 @@ const ChatWindow = ({ chatId }) => {
       
       // Emit stop typing event
       if (socket) {
-        socket.emit('stopTyping', { chatId });
+        socket.emit('typing:stop', { chatId });
       }
     }, 3000);
   };
@@ -219,8 +237,13 @@ const ChatWindow = ({ chatId }) => {
   useEffect(() => {
     if (!socket || !chatId) return;
     
+    // Join the chat room
+    if (socket && chatId) {
+      socket.emit('chat:join', chatId);
+    }
+
     // Listen for new messages in this chat
-    socket.on('newMessage', (message) => {
+    socket.on('message:new', (message) => {
       if (message.chat === chatId) {
         // Add animation flag to new incoming messages
         setMessages((prev) => [...prev, {...message, animate: true}]);
@@ -233,35 +256,41 @@ const ChatWindow = ({ chatId }) => {
     });
     
     // Listen for typing indicators
-    socket.on('userTyping', ({ userId, chatId: typingChatId }) => {
+    socket.on('typing:start', ({ chatId: typingChatId, userId, userName }) => {
       if (typingChatId === chatId && userId !== session?.user?.id) {
         setTyping(true);
       }
     });
     
-    socket.on('userStoppedTyping', ({ userId, chatId: typingChatId }) => {
+    socket.on('typing:stop', ({ chatId: typingChatId, userId }) => {
       if (typingChatId === chatId && userId !== session?.user?.id) {
         setTyping(false);
       }
     });
     
     // Listen for message reads
-    socket.on('messageRead', ({ messageId, userId }) => {
-      setMessages((prev) => 
-        prev.map((msg) => 
-          msg._id === messageId 
-            ? { ...msg, readBy: [...msg.readBy, userId] } 
-            : msg
-        )
-      );
+    socket.on('message:read', ({ chatId: readChatId, userId, messageId }) => {
+      if (readChatId === chatId) {
+        setMessages((prev) => 
+          prev.map((msg) => 
+            messageId ? (msg._id === messageId ? { ...msg, readBy: [...msg.readBy, userId] } : msg)
+            : { ...msg, readBy: [...msg.readBy, userId] }
+          )
+        );
+      }
     });
     
     // Clean up
     return () => {
-      socket.off('newMessage');
-      socket.off('userTyping');
-      socket.off('userStoppedTyping');
-      socket.off('messageRead');
+      // Leave the chat room
+      if (socket && chatId) {
+        socket.emit('chat:leave', chatId);
+      }
+      
+      socket.off('message:new');
+      socket.off('typing:start');
+      socket.off('typing:stop');
+      socket.off('message:read');
     };
   }, [socket, chatId, session]);
 

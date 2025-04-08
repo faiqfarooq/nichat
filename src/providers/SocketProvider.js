@@ -24,10 +24,27 @@ export const SocketProvider = ({ children }) => {
     }
 
     // Initialize socket connection
+    // First, make sure the Socket.IO server is running
+    fetch('/api/socket')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to start Socket.IO server');
+        }
+        return response.text();
+      })
+      .then(() => {
+        console.log('Socket.IO server is running');
+      })
+      .catch(error => {
+        console.error('Socket.IO server error:', error);
+      });
+
+    // Connect to the Socket.IO server
     const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin, {
       auth: {
         token: session.user.id, // Use user ID as authentication
       },
+      path: '/api/socket',
     });
 
     // Set up event listeners

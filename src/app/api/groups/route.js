@@ -15,9 +15,17 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, members } = await request.json();
+    // Log the request body for debugging
+    const requestBody = await request.json();
+    console.log("Group creation request body:", requestBody);
+
+    const { name, members } = requestBody;
+
+    console.log("Extracted name:", name);
+    console.log("Extracted members:", members);
 
     if (!name || !members || !Array.isArray(members) || members.length === 0) {
+      console.log("Validation failed:", { name, members });
       return NextResponse.json(
         { error: "Group name and at least one member are required" },
         { status: 400 }

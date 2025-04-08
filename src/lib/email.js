@@ -1,61 +1,139 @@
-import nodemailer from "nodemailer";
-
-// Create a transporter object
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_SERVER_USER,
-    pass: process.env.EMAIL_SERVER_PASSWORD,
-  },
-  debug: true, // Enable debugging
-  logger: true, // Log debug info
-});
+import nodemailer from 'nodemailer';
 
 /**
- * Send an email
- * @param {string} to - Recipient email
- * @param {string} subject - Email subject
- * @param {string} html - Email content in HTML format
- * @returns {Promise} - Nodemailer send mail promise
+ * Configure the email transporter
+ * @returns {Object} Nodemailer transporter
  */
-export const sendEmail = async (to, subject, html) => {
-  const mailOptions = {
-    from: process.env.EMAIL_FROM,
-    to,
-    subject,
-    html,
+function getEmailTransporter() {
+  // For production, use actual SMTP settings
+  if (process.env.NODE_ENV === 'production') {
+    return nodemailer.createTransport({
+      host: process.env.EMAIL_SERVER_HOST,
+      port: process.env.EMAIL_SERVER_PORT,
+      secure: process.env.EMAIL_SERVER_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_SERVER_USER,
+        pass: process.env.EMAIL_SERVER_PASSWORD,
+      },
+    });
+  }
+  
+  // For development, log emails to console
+  return {
+    sendMail: async (options) => {
+      console.log('Email sent:');
+      console.log('To:', options.to);
+      console.log('Subject:', options.subject);
+      console.log('Text:', options.text);
+      console.log('HTML:', options.html);
+      return { messageId: 'dev-mode' };
+    },
   };
+}
 
+/**
+ * Send a password reset email
+ * @param {string} to - Recipient email address
+ * @param {string} name - Recipient name
+ * @param {string} resetUrl - Password reset URL
+ * @returns {Promise} Promise resolving to the sent message info
+ */
+export async function sendPasswordResetEmail(to, name, resetUrl) {
+  const transporter = getEmailTransporter();
+  
+  const mailOptions = {
+    from: `"Chat App" <${process.env.EMAIL_FROM || 'noreply@chatapp.com'}>`,
+    to,
+    subject: 'Reset Your Password',
+    text: `
+      Hello ${name},
+      
+      You requested to reset your password for your Chat App account.
+      
+      Please click the link below to reset your password:
+      ${resetUrl}
+      
+      This link will expire in 1 hour.
+      
+      If you did not request a password reset, please ignore this email.
+      
+      Best regards,
+      The Chat App Team
+    `,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #34B7F1; padding: 20px; text-align: center; color: white;">
+          <h1>Reset Your Password</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
+          <p>Hello ${name},</p>
+          <p>You requested to reset your password for your Chat App account.</p>
+          <p>Please click the button below to reset your password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #34B7F1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
+          </div>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you did not request a password reset, please ignore this email.</p>
+          <p>Best regards,<br>The Chat App Team</p>
+        </div>
+        <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} Chat App. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  };
+  
   return transporter.sendMail(mailOptions);
-};
+}
 
 /**
  * Send a verification email
- * @param {string} to - Recipient email
- * @param {string} token - Verification token
- * @param {string} name - User's name
- * @returns {Promise} - Nodemailer send mail promise
+ * @param {string} to - Recipient email address
+ * @param {string} name - Recipient name
+ * @param {string} verificationUrl - Email verification URL
+ * @returns {Promise} Promise resolving to the sent message info
  */
-export const sendVerificationEmail = async (to, token, name) => {
-  const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
-
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-      <h2 style="color: #25D366; text-align: center;">Verify Your Email Address</h2>
-      <p>Hello ${name},</p>
-      <p>Thank you for registering with our Chat App. Please verify your email address by clicking the button below:</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${verificationUrl}" style="background-color: #25D366; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email</a>
+export async function sendVerificationEmail(to, name, verificationUrl) {
+  const transporter = getEmailTransporter();
+  
+  const mailOptions = {
+    from: `"Chat App" <${process.env.EMAIL_FROM || 'noreply@chatapp.com'}>`,
+    to,
+    subject: 'Verify Your Email Address',
+    text: `
+      Hello ${name},
+      
+      Thank you for registering with Chat App!
+      
+      Please click the link below to verify your email address:
+      ${verificationUrl}
+      
+      This link will expire in 24 hours.
+      
+      Best regards,
+      The Chat App Team
+    `,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #34B7F1; padding: 20px; text-align: center; color: white;">
+          <h1>Verify Your Email Address</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
+          <p>Hello ${name},</p>
+          <p>Thank you for registering with Chat App!</p>
+          <p>Please click the button below to verify your email address:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background-color: #34B7F1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Verify Email</a>
+          </div>
+          <p>This link will expire in 24 hours.</p>
+          <p>Best regards,<br>The Chat App Team</p>
+        </div>
+        <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} Chat App. All rights reserved.</p>
+        </div>
       </div>
-      <p>If you did not create an account, please ignore this email.</p>
-      <p>This link will expire in 24 hours.</p>
-      <p>If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
-      <p style="word-break: break-all; font-size: 14px; color: #666;">${verificationUrl}</p>
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #666; font-size: 12px;">
-        <p>&copy; ${new Date().getFullYear()} Chat App. All rights reserved.</p>
-      </div>
-    </div>
-  `;
-
-  return sendEmail(to, "Verify Your Email Address", html);
-};
+    `,
+  };
+  
+  return transporter.sendMail(mailOptions);
+}

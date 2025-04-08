@@ -1,5 +1,8 @@
 // src/lib/mongodb/index.js
 import mongoose from 'mongoose';
+import User from './models/User';
+import Message from './models/Message';
+import Chat from './models/Chat';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

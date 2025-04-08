@@ -1,67 +1,68 @@
 'use client';
 
 import { formatDistanceToNow } from 'date-fns';
+import { motion } from 'framer-motion';
 
-const SearchResults = ({ results, isLoading, onSelectUser }) => {
-  if (isLoading) {
-    return (
-      <div className="p-3 flex justify-center">
-        <div className="spinner w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (results.length === 0) {
-    return (
-      <div className="p-4 text-gray-400 text-center">
-        No users found
-      </div>
-    );
-  }
-
+const SearchResults = ({ results, onStartChat, currentUserId }) => {
   return (
-    <ul className="divide-y divide-gray-700">
+    <ul className="space-y-2">
       {results.map((user) => (
-        <li 
+        <motion.li 
           key={user._id}
-          onClick={() => onSelectUser(user)}
-          className="flex items-center px-4 py-3 hover:bg-dark-light cursor-pointer transition"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="flex items-center justify-between p-3 bg-dark-lighter rounded-lg hover:bg-dark-light transition-colors"
         >
-          <div className="relative">
-            <img 
-              src={user.avatar || '/assets/images/default-avatar.png'} 
-              alt={user.name}
-              className="w-12 h-12 rounded-full object-cover" 
-            />
-            {user.isOnline && (
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-lighter"></span>
-            )}
-          </div>
-          
-          <div className="ml-3 flex-1 min-w-0">
-            <div className="flex justify-between items-center">
-              <h4 className="text-white font-medium truncate">{user.name}</h4>
-              <span className="text-xs text-gray-400">
-                {user.isOnline
-                  ? 'Online'
-                  : user.lastSeen
-                  ? `Last seen ${formatDistanceToNow(new Date(user.lastSeen))} ago`
-                  : ''}
-              </span>
-            </div>
-            
-            <div className="mt-1">
-              <p className="text-gray-400 text-sm truncate">
-                {user.status || 'Hey there! I am using Chat App'}
-              </p>
-              {user.isPrivate && (
-                <span className="inline-block mt-1 text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
-                  Private account
-                </span>
+          <div className="flex items-center">
+            <div className="relative mr-3">
+              <img 
+                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=34B7F1&color=fff`}
+                alt={user.name}
+                className="w-12 h-12 rounded-full object-cover" 
+              />
+              {user.isOnline && (
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-lighter"></span>
               )}
             </div>
+            
+            <div className="min-w-0">
+              <div className="flex items-center">
+                <h4 className="text-white font-medium truncate">{user.name}</h4>
+                {user._id === currentUserId && (
+                  <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                    You
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center text-sm">
+                <p className="text-gray-400 truncate">
+                  {user.status || 'Hey there! I am using Chat App'}
+                </p>
+                <span className="mx-2 text-gray-600">•</span>
+                <span className="text-xs text-gray-500 whitespace-nowrap">
+                  {user.isOnline
+                    ? 'Online'
+                    : user.lastSeen
+                    ? `Last seen ${formatDistanceToNow(new Date(user.lastSeen), { addSuffix: true })}`
+                    : ''}
+                </span>
+              </div>
+            </div>
           </div>
-        </li>
+          
+          {user._id !== currentUserId && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onStartChat(user._id)}
+              className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-dark text-sm font-medium rounded transition-colors"
+            >
+              Message
+            </motion.button>
+          )}
+        </motion.li>
       ))}
     </ul>
   );
