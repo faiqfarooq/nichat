@@ -1,14 +1,14 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 // Create a transporter object
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SERVER_HOST,
-  port: process.env.EMAIL_SERVER_PORT,
-  secure: process.env.EMAIL_SERVER_SECURE === 'true',
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_SERVER_USER,
     pass: process.env.EMAIL_SERVER_PASSWORD,
   },
+  debug: true, // Enable debugging
+  logger: true, // Log debug info
 });
 
 /**
@@ -38,7 +38,7 @@ export const sendEmail = async (to, subject, html) => {
  */
 export const sendVerificationEmail = async (to, token, name) => {
   const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
-  
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
       <h2 style="color: #25D366; text-align: center;">Verify Your Email Address</h2>
@@ -57,5 +57,5 @@ export const sendVerificationEmail = async (to, token, name) => {
     </div>
   `;
 
-  return sendEmail(to, 'Verify Your Email Address', html);
+  return sendEmail(to, "Verify Your Email Address", html);
 };
