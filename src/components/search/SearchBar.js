@@ -2,15 +2,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-const SearchBar = ({ onSearch, placeholder = 'Search...' }) => {
+const SearchBar = ({ onSearch, placeholder = 'Search...', value, onChange }) => {
   const [query, setQuery] = useState('');
+  const isControlled = value !== undefined && onChange !== undefined;
   const [isFocused, setIsFocused] = useState(false);
   const searchTimeout = useRef(null);
 
   // Handle input change with debounce
   const handleChange = (e) => {
-    const value = e.target.value;
-    setQuery(value);
+    const newValue = e.target.value;
+    
+    if (!isControlled) {
+      setQuery(newValue);
+    } else {
+      onChange(e);
+    }
 
     // Clear previous timeout
     if (searchTimeout.current) {
@@ -19,7 +25,7 @@ const SearchBar = ({ onSearch, placeholder = 'Search...' }) => {
 
     // Set new timeout for search
     searchTimeout.current = setTimeout(() => {
-      onSearch(value);
+      onSearch(newValue);
     }, 300);
   };
 
@@ -61,7 +67,7 @@ const SearchBar = ({ onSearch, placeholder = 'Search...' }) => {
       
       <input
         type="text"
-        value={query}
+        value={isControlled ? value : query}
         onChange={handleChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
@@ -69,12 +75,18 @@ const SearchBar = ({ onSearch, placeholder = 'Search...' }) => {
         className="w-full pl-10 pr-4 py-2 bg-dark-light rounded-md border border-gray-700 focus:outline-none text-white placeholder-gray-400"
       />
       
-      {query && (
+      {(isControlled ? value : query) && (
         <button
           type="button"
           onClick={() => {
-            setQuery('');
-            onSearch('');
+            if (isControlled) {
+              const event = { target: { value: '' } };
+              onChange(event);
+              onSearch('');
+            } else {
+              setQuery('');
+              onSearch('');
+            }
           }}
           className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition"
         >

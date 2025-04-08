@@ -387,7 +387,16 @@ const ChatList = () => {
                     ? "Search for users to start chatting"
                     : "Create a group to chat with multiple people"}
                 </p>
-                <button className="mt-4 px-4 py-2 bg-primary text-dark rounded-md font-medium text-sm hover:bg-primary-dark transition-colors">
+                <button 
+                  onClick={() => {
+                    if (activeTab === "groups") {
+                      router.push('/groups/new');
+                    } else {
+                      router.push('/search');
+                    }
+                  }}
+                  className="mt-4 px-4 py-2 bg-primary text-dark rounded-md font-medium text-sm hover:bg-primary-dark transition-colors"
+                >
                   {activeTab === "chats" ? "Find Friends" : "Create Group"}
                 </button>
               </div>
@@ -418,7 +427,8 @@ const ChatList = () => {
         <button
           onClick={() => {
             if (activeTab === "groups") {
-              // Open create group modal
+              // Navigate to create group page
+              router.push('/groups/new');
             } else {
               setIsSearching(true);
             }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatRelative } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import Avatar from "@/components/ui/Avatar";
 
 const Message = ({
   message,
@@ -197,16 +198,13 @@ const Message = ({
         {/* Sender avatar (only show for group chats and messages not sent by current user) */}
         {isGroupChat && !isOwnMessage && !isSameSender && (
           <div className="mr-2 mb-1">
-            <img
-              src={
-                sender.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  sender.name
-                )}&background=34B7F1&color=fff`
-              }
-              alt={sender.name}
-              className="w-8 h-8 rounded-full object-cover"
-            />
+            <div className="border border-gray-700 shadow-sm rounded-full">
+              <Avatar 
+                src={sender.avatar} 
+                name={sender.name} 
+                size="sm"
+              />
+            </div>
           </div>
         )}
 
