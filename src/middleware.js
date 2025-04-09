@@ -7,17 +7,20 @@ export async function middleware(request) {
   // Check if the request is for a protected route
   const isProtectedRoute = 
     pathname.startsWith('/chat') || 
-    pathname.startsWith('/profile');
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/groups') ||
+    pathname.startsWith('/search');
   
   // Skip middleware for non-protected routes and API routes
   if (!isProtectedRoute || pathname.startsWith('/api')) {
     return NextResponse.next();
   }
   
-  // Get the session token
+  // Get the session token with secure options
   const token = await getToken({ 
     req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === 'production'
   });
   
   // If no token, redirect to login
