@@ -3,6 +3,7 @@
 import { CldUploadWidget } from 'next-cloudinary';
 import { createContext, useContext, useState, useCallback } from 'react';
 import { cloudinaryConfig } from '@/lib/cloudinary';
+import { getApiUrl } from '@/lib/apiUtils';
 
 // Create a context for Cloudinary
 const CloudinaryContext = createContext();
@@ -57,7 +58,7 @@ export function CloudinaryUploadButton({ onUpload, children, className, options 
         return;
       }
       
-      const response = await fetch('/api/cloudinary/signature');
+      const response = await fetch(getApiUrl('/api/cloudinary/signature'));
       
       if (!response.ok) {
         throw new Error('Failed to get upload signature');

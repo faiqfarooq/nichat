@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ChatItem from "./ChatItem";
 import { useSocket } from "@/hooks/useSocket";
 import SearchBar from "../search/SearcgBar";
+import { getApiUrl } from "@/lib/apiUtils";
 
 
 const ChatList = () => {
@@ -31,7 +32,7 @@ const ChatList = () => {
   const fetchChats = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/chats");
+      const response = await fetch(getApiUrl("/api/chats"));
 
       if (!response.ok) {
         throw new Error("Failed to fetch chats");
@@ -70,7 +71,7 @@ const ChatList = () => {
 
     try {
       const response = await fetch(
-        `/api/users/search?query=${encodeURIComponent(query)}`
+        getApiUrl(`/api/users/search?query=${encodeURIComponent(query)}`)
       );
 
       if (!response.ok) {
@@ -88,7 +89,7 @@ const ChatList = () => {
   const startChat = async (userId) => {
     try {
       // Create or get existing chat
-      const response = await fetch("/api/chats", {
+      const response = await fetch(getApiUrl("/api/chats"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

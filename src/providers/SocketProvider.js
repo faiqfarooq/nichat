@@ -3,6 +3,7 @@
 import { createContext, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import io from 'socket.io-client';
+import { getApiUrl } from '@/lib/apiUtils';
 
 // Create context
 export const SocketContext = createContext(null);
@@ -25,7 +26,7 @@ export const SocketProvider = ({ children }) => {
 
     // Initialize socket connection
     // First, make sure the Socket.IO server is running
-    fetch('/api/socket')
+    fetch(getApiUrl('/api/socket'))
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to start Socket.IO server');

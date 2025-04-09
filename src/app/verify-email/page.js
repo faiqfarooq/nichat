@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getApiUrl } from '@/lib/apiUtils';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function VerifyEmailPage() {
       
       try {
         // Use a try-catch block to handle potential fetch errors
-        const response = await fetch(`/api/auth/verify-email?token=${token}`, {
+        const response = await fetch(getApiUrl(`/api/auth/verify-email?token=${token}`), {
           // Add cache control to prevent caching issues
           cache: 'no-store',
           headers: {

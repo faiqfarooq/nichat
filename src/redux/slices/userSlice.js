@@ -1,11 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { getApiUrl } from '@/lib/apiUtils';
 
 // Async thunk for fetching user data
 export const fetchUserData = createAsyncThunk(
   'user/fetchUserData',
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/users/${userId}`);
+      const response = await fetch(getApiUrl(`/api/users/${userId}`));
       
       if (!response.ok) {
         throw new Error('Failed to fetch user data');
@@ -29,7 +30,7 @@ export const updateUserAvatar = createAsyncThunk(
       formData.append('file', file);
       
       // Upload the image to Cloudinary via our API
-      const response = await fetch('/api/upload/image', {
+      const response = await fetch(getApiUrl('/api/upload/image'), {
         method: 'POST',
         body: formData,
       });
@@ -42,7 +43,7 @@ export const updateUserAvatar = createAsyncThunk(
       const result = await response.json();
       
       // Fetch the updated profile to get the complete user data
-      const profileResponse = await fetch(`/api/users/${userId}`);
+      const profileResponse = await fetch(getApiUrl(`/api/users/${userId}`));
       if (!profileResponse.ok) {
         throw new Error('Failed to fetch updated profile');
       }
@@ -60,7 +61,7 @@ export const updateUserProfile = createAsyncThunk(
   'user/updateUserProfile',
   async ({ userId, profileData }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(getApiUrl(`/api/users/${userId}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

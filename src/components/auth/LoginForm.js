@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/apiUtils';
 
 const LoginForm = () => {
   const router = useRouter();
@@ -98,7 +99,7 @@ const LoginForm = () => {
             onClick={async () => {
               try {
                 setResendingEmail(true);
-                const response = await fetch('/api/auth/resend-verification', {
+                const response = await fetch(getApiUrl('/api/auth/resend-verification'), {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',

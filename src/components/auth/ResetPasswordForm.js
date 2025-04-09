@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getApiUrl } from '@/lib/apiUtils';
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function ResetPasswordForm() {
     // Optionally verify token validity with the server
     const verifyToken = async () => {
       try {
-        const response = await fetch(`/api/auth/verify-reset-token?token=${token}`);
+        const response = await fetch(getApiUrl(`/api/auth/verify-reset-token?token=${token}`));
         
         if (!response.ok) {
           setTokenValid(false);
@@ -66,7 +67,7 @@ export default function ResetPasswordForm() {
       setLoading(true);
       setError('');
       
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch(getApiUrl('/api/auth/reset-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
