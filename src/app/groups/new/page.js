@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SearchBar from '@/components/search/SearchBar';
 import Avatar from '@/components/ui/Avatar';
 import useUserData from '@/hooks/useUserData';
+import { getApiUrl } from '@/lib/apiUtils';
 
 export default function NewGroupPage() {
   const { data: session, status } = useSession();
@@ -56,7 +57,7 @@ export default function NewGroupPage() {
       setSearchLoading(true);
       setError('');
       
-      const response = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`);
+      const response = await fetch(getApiUrl(`/api/users/search?query=${encodeURIComponent(query)}`));
       
       if (!response.ok) {
         throw new Error('Failed to search users');
@@ -127,7 +128,7 @@ export default function NewGroupPage() {
         const formData = new FormData();
         formData.append('file', groupImage);
         
-        const imageResponse = await fetch('/api/upload/image', {
+        const imageResponse = await fetch(getApiUrl('/api/upload/image'), {
           method: 'POST',
           body: formData,
         });
@@ -147,7 +148,7 @@ export default function NewGroupPage() {
       console.log('Selected users:', selectedUsers);
       
       // Use the dedicated create-group API endpoint
-      const response = await fetch('/api/create-group', {
+      const response = await fetch(getApiUrl('/api/create-group'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

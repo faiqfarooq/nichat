@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Message from './Message';
 import MessageInput from './MessageInput';
 import { useSocket } from '@/hooks/useSocket';
+import { getApiUrl } from '@/lib/apiUtils';
 
 const ChatWindow = ({ chatId }) => {
   const { data: session } = useSession();
@@ -32,7 +33,7 @@ const ChatWindow = ({ chatId }) => {
   // Fetch chat details
   const fetchChat = async () => {
     try {
-      const response = await fetch(`/api/chats/${chatId}`);
+      const response = await fetch(getApiUrl(`/api/chats/${chatId}`));
       
       if (!response.ok) {
         throw new Error('Failed to fetch chat');
@@ -52,7 +53,7 @@ const ChatWindow = ({ chatId }) => {
       if (!before) setLoading(true);
       else setLoadingMore(true);
       
-      let url = `/api/messages?chatId=${chatId}`;
+      let url = getApiUrl(`/api/messages?chatId=${chatId}`);
       if (before) url += `&before=${before}`;
       
       const response = await fetch(url);
@@ -139,7 +140,7 @@ const ChatWindow = ({ chatId }) => {
       }
       
       // Fallback to API if socket is not available
-      const response = await fetch('/api/messages', {
+      const response = await fetch(getApiUrl('/api/messages'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

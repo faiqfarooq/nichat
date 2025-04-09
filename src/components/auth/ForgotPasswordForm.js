@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getApiUrl } from '@/lib/apiUtils';
 
 export default function ForgotPasswordForm() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function ForgotPasswordForm() {
       setLoading(true);
       setError('');
       
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await fetch(getApiUrl('/api/auth/forgot-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

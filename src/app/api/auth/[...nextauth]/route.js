@@ -5,11 +5,19 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import User from "@/lib/mongodb/models/User";
 import connectDB from "@/lib/mongodb";
+import { getApiBaseUrl } from "@/lib/apiUtils";
 
 /**
  * NextAuth configuration
  */
+// Determine the base URL for NextAuth
+const baseUrl = process.env.NODE_ENV === 'production'
+  ? process.env.NEXTAUTH_URL || 'https://nichat-self.vercel.app'
+  : process.env.NEXTAUTH_URL;
+
 export const authOptions = {
+  // Set the base URL for NextAuth
+  baseUrl,
   providers: [
     CredentialsProvider({
       name: "Credentials",

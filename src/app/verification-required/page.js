@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getApiUrl } from "@/lib/apiUtils";
 
 export default function VerificationRequiredPage() {
   const { data: session } = useSession();
@@ -25,7 +26,7 @@ export default function VerificationRequiredPage() {
       setError("");
       setSuccess("");
 
-      const response = await fetch("/api/auth/resend-verification", {
+      const response = await fetch(getApiUrl("/api/auth/resend-verification"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

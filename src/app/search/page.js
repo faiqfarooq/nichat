@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
+import { getApiUrl } from '@/lib/apiUtils';
 
 export default function SearchPage() {
   const { data: session, status } = useSession();
@@ -48,7 +49,7 @@ export default function SearchPage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch(`/api/users/search?query=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(getApiUrl(`/api/users/search?query=${encodeURIComponent(searchQuery)}`));
       
       if (!response.ok) {
         throw new Error('Failed to search users');
@@ -67,7 +68,7 @@ export default function SearchPage() {
   // Start a chat with a user
   const startChat = async (userId) => {
     try {
-      const response = await fetch('/api/chats', {
+      const response = await fetch(getApiUrl('/api/chats'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
