@@ -37,9 +37,9 @@ export async function GET(request) {
     user.verificationTokenExpires = undefined;
     await user.save();
 
-    // Redirect to login page with success message
+    // Redirect to login page with success message using a relative URL
     return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/login?verified=true`
+      `/login?verified=true`
     );
   } catch (error) {
     console.error("Email verification error:", error);

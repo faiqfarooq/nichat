@@ -21,7 +21,7 @@ export async function GET(req) {
     // Create a new Socket.IO server
     io = new SocketIOServer({
       cors: {
-        origin: process.env.NEXTAUTH_URL || '*',
+        origin: '*', // Allow all origins
         methods: ['GET', 'POST'],
         credentials: true,
       },

@@ -38,8 +38,8 @@ export async function POST(request) {
     user.resetPasswordExpires = expires;
     await user.save();
 
-    // Send password reset email
-    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+    // Send password reset email with a relative URL
+    const resetUrl = `/reset-password?token=${token}`;
     await sendPasswordResetEmail(user.email, user.name, resetUrl);
 
     return NextResponse.json(
