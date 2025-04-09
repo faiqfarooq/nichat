@@ -93,9 +93,11 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
  * @returns {Promise} Promise resolving to the sent message info
  */
 export async function sendVerificationEmail(to, token, name) {
-  // Construct the verification URL with a relative path
-  // This will work with any deployment URL
-  const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+  // Construct the verification URL with absolute URL in production or relative in development
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? process.env.NEXTAUTH_URL || 'https://nichat-self.vercel.app'
+    : '';
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   const transporter = getEmailTransporter();
 
   const mailOptions = {
