@@ -41,13 +41,13 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
   const transporter = getEmailTransporter();
 
   const mailOptions = {
-    from: `"Chat App" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
+    from: `"NiChat" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
     to,
     subject: "Reset Your Password",
     text: `
       Hello ${name},
       
-      You requested to reset your password for your Chat App account.
+      You requested to reset your password for your NiChat account.
       
       Please click the link below to reset your password:
       ${resetUrl}
@@ -57,7 +57,7 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
       If you did not request a password reset, please ignore this email.
       
       Best regards,
-      The Chat App Team
+      The NiChat Team
     `,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -66,17 +66,17 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
         </div>
         <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
           <p>Hello ${name},</p>
-          <p>You requested to reset your password for your Chat App account.</p>
+          <p>You requested to reset your password for your NiChat account.</p>
           <p>Please click the button below to reset your password:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" style="background-color: #34B7F1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
           </div>
           <p>This link will expire in 1 hour.</p>
           <p>If you did not request a password reset, please ignore this email.</p>
-          <p>Best regards,<br>The Chat App Team</p>
+          <p>Best regards,<br>The NiChat Team</p>
         </div>
         <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Chat App. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} NiChat. All rights reserved.</p>
         </div>
       </div>
     `,
@@ -95,17 +95,17 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
 export async function sendVerificationEmail(to, token, name) {
   // Construct the verification URL with a relative path
   // This will work with any deployment URL
-  const verificationUrl = `/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
   const transporter = getEmailTransporter();
 
   const mailOptions = {
-    from: `"Chat App" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
+    from: `"nichat" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
     to,
     subject: "Verify Your Email Address",
     text: `
       Hello ${name},
       
-      Thank you for registering with Chat App!
+      Thank you for registering with NiChat!
       
       Please click the link below to verify your email address:
       ${verificationUrl}
@@ -113,7 +113,7 @@ export async function sendVerificationEmail(to, token, name) {
       This link will expire in 24 hours.
       
       Best regards,
-      The Chat App Team
+      The NiChat Team
     `,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -122,16 +122,16 @@ export async function sendVerificationEmail(to, token, name) {
         </div>
         <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
           <p>Hello ${name},</p>
-          <p>Thank you for registering with Chat App!</p>
+          <p>Thank you for registering with NiChat!</p>
           <p>Please click the button below to verify your email address:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationUrl}" style="background-color: #34B7F1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Verify Email</a>
           </div>
           <p>This link will expire in 24 hours.</p>
-          <p>Best regards,<br>The Chat App Team</p>
+          <p>Best regards,<br>The NiChat Team</p>
         </div>
         <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
-          <p>© ${new Date().getFullYear()} Chat App. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} NiChat. All rights reserved.</p>
         </div>
       </div>
     `,
