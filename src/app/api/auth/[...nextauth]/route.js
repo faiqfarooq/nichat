@@ -18,6 +18,13 @@ const baseUrl = process.env.NODE_ENV === 'production'
 export const authOptions = {
   // Set the base URL for NextAuth
   baseUrl,
+  // Force redirect after sign in
+  pages: {
+    signIn: "/login",
+    signOut: "/login",
+    error: "/login", // Error code passed in query string as ?error=
+    verifyRequest: "/verification-required", // (used for check email message)
+  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -122,11 +129,21 @@ export const authOptions = {
       return true;
     },
   },
-  pages: {
-    signIn: "/login",
-  },
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

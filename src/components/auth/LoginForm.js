@@ -46,30 +46,17 @@ const LoginForm = () => {
       setLoading(true);
       setError('');
 
-      const result = await signIn('credentials', {
-        redirect: false,
+      // Use direct redirection for more reliable navigation in production
+      await signIn('credentials', {
+        redirect: true,
+        callbackUrl: '/chat',
         email: formData.email,
         password: formData.password,
       });
 
-      if (result?.error) {
-        // Check if the error is about email verification
-        if (result.error.includes('verify your email')) {
-          setEmailToResend(formData.email);
-          setShowResendLink(true);
-        }
-        throw new Error(result.error);
-      }
-
-      // Show success message
+      // The code below won't execute due to the redirect above,
+      // but we'll keep it as a fallback
       setSuccess('Login successful! Redirecting...');
-      
-      // Add a longer delay before redirecting to ensure the session is properly set in production
-      setTimeout(() => {
-        // Use window.location for a hard redirect instead of router.replace
-        // This ensures a complete page reload which helps with session persistence in production
-        window.location.href = '/chat';
-      }, 1500);
     } catch (error) {
       setError(error.message);
     } finally {
