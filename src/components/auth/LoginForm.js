@@ -64,11 +64,12 @@ const LoginForm = () => {
       // Show success message
       setSuccess('Login successful! Redirecting...');
       
-      // Add a small delay before redirecting to ensure the session is properly set
+      // Add a longer delay before redirecting to ensure the session is properly set in production
       setTimeout(() => {
-        // Redirect to app with replace to avoid back button issues
-        router.replace('/chat');
-      }, 1000);
+        // Use window.location for a hard redirect instead of router.replace
+        // This ensures a complete page reload which helps with session persistence in production
+        window.location.href = '/chat';
+      }, 1500);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -195,7 +196,10 @@ const LoginForm = () => {
         
         <div className="mt-6">
           <button
-            onClick={() => signIn('google', { callbackUrl: '/chat' })}
+            onClick={() => signIn('google', { 
+              callbackUrl: '/chat',
+              redirect: true // Force a server-side redirect
+            })}
             disabled={loading}
             className="w-full flex items-center justify-center py-2 px-4 bg-white hover:bg-gray-100 text-gray-800 font-medium rounded transition duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
           >
