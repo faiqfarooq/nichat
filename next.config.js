@@ -6,11 +6,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**.googleusercontent.com",
+        hostname: "**",
       },
       {
         protocol: "https",
-        hostname: "res.cloudinary.com",
+        hostname: "**",
       },
     ],
   },

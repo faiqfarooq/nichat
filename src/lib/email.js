@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 /**
  * Configure the email transporter
@@ -6,27 +6,26 @@ import nodemailer from 'nodemailer';
  */
 function getEmailTransporter() {
   // For production, use actual SMTP settings
-  if (process.env.NODE_ENV === 'production') {
-    return nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: process.env.EMAIL_SERVER_PORT,
-      secure: process.env.EMAIL_SERVER_SECURE === 'true',
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    });
-  }
-  
+
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_SERVER_HOST,
+    port: process.env.EMAIL_SERVER_PORT,
+    secure: process.env.EMAIL_SERVER_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_SERVER_USER,
+      pass: process.env.EMAIL_SERVER_PASSWORD,
+    },
+  });
+
   // For development, log emails to console
   return {
     sendMail: async (options) => {
-      console.log('Email sent:');
-      console.log('To:', options.to);
-      console.log('Subject:', options.subject);
-      console.log('Text:', options.text);
-      console.log('HTML:', options.html);
-      return { messageId: 'dev-mode' };
+      console.log("Email sent:");
+      console.log("To:", options.to);
+      console.log("Subject:", options.subject);
+      console.log("Text:", options.text);
+      console.log("HTML:", options.html);
+      return { messageId: "dev-mode" };
     },
   };
 }
@@ -40,11 +39,11 @@ function getEmailTransporter() {
  */
 export async function sendPasswordResetEmail(to, name, resetUrl) {
   const transporter = getEmailTransporter();
-  
+
   const mailOptions = {
-    from: `"Chat App" <${process.env.EMAIL_FROM || 'noreply@chatapp.com'}>`,
+    from: `"Chat App" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
     to,
-    subject: 'Reset Your Password',
+    subject: "Reset Your Password",
     text: `
       Hello ${name},
       
@@ -82,7 +81,7 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
       </div>
     `,
   };
-  
+
   return transporter.sendMail(mailOptions);
 }
 
@@ -93,13 +92,15 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
  * @param {string} verificationUrl - Email verification URL
  * @returns {Promise} Promise resolving to the sent message info
  */
-export async function sendVerificationEmail(to, name, verificationUrl) {
+export async function sendVerificationEmail(to, token, name) {
+  // Construct the verification URL
+  const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
   const transporter = getEmailTransporter();
-  
+
   const mailOptions = {
-    from: `"Chat App" <${process.env.EMAIL_FROM || 'noreply@chatapp.com'}>`,
+    from: `"Chat App" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
     to,
-    subject: 'Verify Your Email Address',
+    subject: "Verify Your Email Address",
     text: `
       Hello ${name},
       
@@ -134,6 +135,6 @@ export async function sendVerificationEmail(to, name, verificationUrl) {
       </div>
     `,
   };
-  
+
   return transporter.sendMail(mailOptions);
 }
