@@ -60,8 +60,14 @@ const LoginForm = () => {
         throw new Error(result.error);
       }
 
-      // Redirect to app
-      router.push('/chat');
+      // Show success message
+      setSuccess('Login successful! Redirecting...');
+      
+      // Add a small delay before redirecting to ensure the session is properly set
+      setTimeout(() => {
+        // Redirect to app with replace to avoid back button issues
+        router.replace('/chat');
+      }, 1000);
     } catch (error) {
       setError(error.message);
     } finally {

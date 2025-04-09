@@ -22,16 +22,41 @@ export default function VerifyEmailPage() {
       }
       
       try {
-        const response = await fetch(`/api/auth/verify-email?token=${token}`);
+        // Use a try-catch block to handle potential fetch errors
+        const response = await fetch(`/api/auth/verify-email?token=${token}`, {
+          // Add cache control to prevent caching issues
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
         
+        // Check if the response is a redirect
         if (response.redirected) {
           // If the API redirects, follow the redirect
           router.push(response.url);
           return;
         }
         
-        const data = await response.json();
+        // Try to parse the JSON response
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          // If JSON parsing fails, it might be a redirect or other response type
+          if (response.ok) {
+            // If the response was successful but not JSON, consider it a success
+            setStatus('success');
+            setTimeout(() => {
+              router.push('/login?verified=true');
+            }, 3000);
+          } else {
+            throw new Error('Invalid response from server');
+          }
+          return;
+        }
         
+        // Handle normal JSON response
         if (!response.ok) {
           setStatus('error');
           setError(data.error || 'Failed to verify email');

@@ -37,10 +37,16 @@ export async function GET(request) {
     user.verificationTokenExpires = undefined;
     await user.save();
 
-    // Redirect to login page with success message using a relative URL
-    return NextResponse.redirect(
-      `/login?verified=true`
-    );
+    // Determine the base URL for redirection
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? process.env.NEXTAUTH_URL || 'https://nichat-self.vercel.app'
+      : '';
+    
+    // Construct the full redirect URL
+    const redirectUrl = `${baseUrl}/login?verified=true`;
+    
+    // Redirect to login page with success message
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error("Email verification error:", error);
     return NextResponse.json(
