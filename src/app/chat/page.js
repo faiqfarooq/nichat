@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from '@/components/ui/Avatar';
 import useUserData from '@/hooks/useUserData';
+import NotificationBar from '@/components/layout/NotificationBar';
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
@@ -172,6 +173,8 @@ export default function ChatPage() {
             </svg>
           </Link>
           
+          <NotificationBar />
+          
           <Link href="/profile" className="flex items-center group">
             <div className="relative">
               <motion.div
@@ -311,15 +314,30 @@ export default function ChatPage() {
               transition={{ delay: 1.2 }}
               className="mt-12 flex flex-wrap gap-3 justify-center"
             >
-              <div className="text-xs bg-dark-lighter text-gray-400 py-1 px-3 rounded-full">
+              <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: "#2a2d35" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/chat')}
+                className="text-xs bg-dark-lighter text-gray-400 py-1 px-3 rounded-full hover:text-primary transition-colors"
+              >
                 Recent Conversations
-              </div>
-              <div className="text-xs bg-dark-lighter text-gray-400 py-1 px-3 rounded-full">
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: "#2a2d35" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/search')}
+                className="text-xs bg-dark-lighter text-gray-400 py-1 px-3 rounded-full hover:text-primary transition-colors"
+              >
                 Quick Replies
-              </div>
-              <div className="text-xs bg-dark-lighter text-gray-400 py-1 px-3 rounded-full">
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: "#2a2d35" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/search?suggested=true')}
+                className="text-xs bg-dark-lighter text-gray-400 py-1 px-3 rounded-full hover:text-primary transition-colors"
+              >
                 Suggestions
-              </div>
+              </motion.button>
             </motion.div>
           </div>
         </motion.main>

@@ -4,9 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
+import NotificationBar from "./NotificationBar";
 
 export default function EnhancedNavbar() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState("contact"); // Set based on current page
@@ -184,29 +187,76 @@ export default function EnhancedNavbar() {
 
           {/* Action Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <motion.button
-              variants={menuItemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark-lighter transition-colors"
-            >
-              Log In
-            </motion.button>
+            {status === "authenticated" ? (
+              <>
+                <Link href="/search">
+                  <motion.button
+                    variants={menuItemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2 text-gray-400 hover:text-white focus:outline-none"
+                    aria-label="Search"
+                  >
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </motion.button>
+                </Link>
+                <NotificationBar />
+                <Link href="/profile">
+                  <motion.div
+                    variants={menuItemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark-lighter transition-colors"
+                  >
+                    {session.user.avatar ? (
+                      <img 
+                        src={session.user.avatar}
+                        alt={session.user.name}
+                        className="w-6 h-6 rounded-full mr-2" 
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-sm mr-2">
+                        {session.user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span>{session.user.name}</span>
+                  </motion.div>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <motion.button
+                    variants={menuItemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark-lighter transition-colors"
+                  >
+                    Log In
+                  </motion.button>
+                </Link>
 
-            <motion.button
-              variants={menuItemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-dark font-medium rounded-lg relative overflow-hidden group"
-            >
-              <span className="relative z-10">Sign Up</span>
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-secondary to-primary"
-                initial={{ x: "100%" }}
-                whileHover={{ x: 0 }}
-                transition={{ duration: 0.3 }}
-              />
-            </motion.button>
+                <Link href="/register">
+                  <motion.button
+                    variants={menuItemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-dark font-medium rounded-lg relative overflow-hidden group"
+                  >
+                    <span className="relative z-10">Sign Up</span>
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-secondary to-primary"
+                      initial={{ x: "100%" }}
+                      whileHover={{ x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -267,22 +317,81 @@ export default function EnhancedNavbar() {
               ))}
             </ul>
 
-            <div className="grid grid-cols-2 gap-4">
-              <motion.button
-                variants={mobileMenuItemVariants}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors"
-              >
-                Log In
-              </motion.button>
+            <div className="grid grid-cols-3 gap-4">
+              {status === "authenticated" ? (
+                <>
+                  <Link href="/search">
+                    <motion.div
+                      variants={mobileMenuItemVariants}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center justify-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors"
+                    >
+                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      <span>Search</span>
+                    </motion.div>
+                  </Link>
+                  
+                  <Link href="/notifications">
+                    <motion.div
+                      variants={mobileMenuItemVariants}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center justify-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors"
+                    >
+                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                      </svg>
+                      <span>Notifications</span>
+                    </motion.div>
+                  </Link>
+                  
+                  <Link href="/profile">
+                    <motion.div
+                      variants={mobileMenuItemVariants}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center justify-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors"
+                    >
+                      {session.user.avatar ? (
+                        <img 
+                          src={session.user.avatar}
+                          alt={session.user.name}
+                          className="w-5 h-5 rounded-full mr-2" 
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-xs mr-2">
+                          {session.user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span>Profile</span>
+                    </motion.div>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <motion.button
+                      variants={mobileMenuItemVariants}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors"
+                    >
+                      Log In
+                    </motion.button>
+                  </Link>
 
-              <motion.button
-                variants={mobileMenuItemVariants}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-dark font-medium rounded-lg"
-              >
-                Sign Up
-              </motion.button>
+                  <Link href="/register">
+                    <motion.button
+                      variants={mobileMenuItemVariants}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-dark font-medium rounded-lg"
+                    >
+                      Sign Up
+                    </motion.button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

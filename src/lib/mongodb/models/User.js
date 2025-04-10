@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -25,7 +24,6 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: '/assets/images/default-avatar.png',
     },
     status: {
       type: String,
@@ -45,6 +43,40 @@ const UserSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
       },
+    ],
+    pendingRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    notifications: [
+      {
+        type: {
+          type: String,
+          enum: ['follow', 'request', 'accept', 'message'],
+          required: true
+        },
+        from: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        read: {
+          type: Boolean,
+          default: false
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
     ],
     isPrivate: {
       type: Boolean,

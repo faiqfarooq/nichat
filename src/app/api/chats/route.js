@@ -69,6 +69,17 @@ export async function POST(request) {
         );
       }
       
+      // Check if user is private and not in current user's contacts
+      if (user.isPrivate) {
+        const currentUser = await User.findById(session.user.id);
+        if (!currentUser.contacts.includes(userId)) {
+          return NextResponse.json(
+            { error: "Cannot message a private user unless they accept your request" },
+            { status: 403 }
+          );
+        }
+      }
+      
       // Check if chat already exists
       const existingChat = await Chat.findOne({
         isGroup: false,

@@ -90,6 +90,30 @@ export async function GET(req) {
         }
       });
       
+      // Handle social notifications (follow, request, accept)
+      socket.on('notification:social', async (notificationData) => {
+        try {
+          const { type, targetUserId, data = {} } = notificationData;
+          
+          if (!targetUserId || !type) {
+            return;
+          }
+          
+          // Emit notification to target user
+          io.to(targetUserId).emit(`notification:${type}`, {
+            type,
+            from: socket.user,
+            createdAt: new Date(),
+            read: false,
+            ...data
+          });
+          
+        } catch (error) {
+          console.error('Error handling social notification:', error);
+          socket.emit('error', { message: 'Error sending notification' });
+        }
+      });
+      
       // Handle new messages
       socket.on('message:new', async (messageData) => {
         try {

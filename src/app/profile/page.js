@@ -9,6 +9,10 @@ import Avatar from '@/components/ui/Avatar';
 import { useDispatch } from 'react-redux';
 import { updateUserAvatar, updateUserProfile } from '@/redux/slices/userSlice';
 import useUserData from '@/hooks/useUserData';
+import PendingRequests from '@/components/profile/PendingRequests';
+import FollowersList from '@/components/profile/FollowersList';
+import FollowingList from '@/components/profile/FollowingList';
+import ContactsList from '@/components/profile/ContactsList';
 
 export default function ProfilePage() {
   const { data: session, status: authStatus, update } = useSession();
@@ -384,6 +388,29 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
+        </div>
+        
+        {/* Social Connections Sections */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Pending Requests Section */}
+          <div className="bg-dark-lighter rounded-lg overflow-hidden shadow-lg border border-gray-700/50 p-6">
+            <PendingRequests />
+          </div>
+          
+          {/* Followers Section */}
+          <div className="bg-dark-lighter rounded-lg overflow-hidden shadow-lg border border-gray-700/50 p-6">
+            <FollowersList />
+          </div>
+          
+          {/* Contacts Section */}
+          <div className="bg-dark-lighter rounded-lg overflow-hidden shadow-lg border border-gray-700/50 p-6 md:col-span-2">
+            <ContactsList />
+          </div>
+          
+          {/* Following Section */}
+          <div className="bg-dark-lighter rounded-lg overflow-hidden shadow-lg border border-gray-700/50 p-6 md:col-span-2">
+            <FollowingList />
+          </div>
         </div>
       </main>
     </div>
