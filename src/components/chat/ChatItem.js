@@ -37,7 +37,7 @@ const ChatItem = ({ chat, active, currentUserId }) => {
     const { content, contentType, sender } = chat.lastMessage;
     const isSentByMe = sender._id === currentUserId;
     const prefix = isGroup 
-      ? (isSentByMe ? 'You: ' : `${sender.name.split(' ')[0]}: `) 
+      ? (isSentByMe ? 'You: ' : `${sender.name ? sender.name.split(' ')[0] : 'User'}: `) 
       : (isSentByMe ? 'You: ' : '');
     
     if (contentType === 'text') {

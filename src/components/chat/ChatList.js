@@ -20,7 +20,7 @@ const ChatList = () => {
   const [error, setError] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [activeTab, setActiveTab] = useState("chats"); // 'chats' or 'groups'
+  // No longer using tabs, always showing chats only
 
   // Get current active chat ID from URL
   const activeChatId = pathname.startsWith("/chat/")
@@ -118,11 +118,8 @@ const ChatList = () => {
     }
   };
 
-  // Filter chats based on active tab
-  const filteredChats = chats.filter((chat) => {
-    if (activeTab === "groups") return chat.isGroup;
-    return !chat.isGroup;
-  });
+  // Filter out group chats
+  const filteredChats = chats.filter((chat) => !chat.isGroup);
 
   // Initial fetch
   useEffect(() => {
@@ -326,40 +323,9 @@ const ChatList = () => {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto flex flex-col">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-700 px-1">
-            <button
-              onClick={() => setActiveTab("chats")}
-              className={`flex-1 py-3 text-sm font-medium relative ${
-                activeTab === "chats"
-                  ? "text-primary"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              Chats
-              {activeTab === "chats" && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("groups")}
-              className={`flex-1 py-3 text-sm font-medium relative ${
-                activeTab === "groups"
-                  ? "text-primary"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              Groups
-              {activeTab === "groups" && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                />
-              )}
-            </button>
+          {/* Chat header */}
+          <div className="px-4 py-3 border-b border-gray-700">
+            <h2 className="text-white font-medium">Chats</h2>
           </div>
 
           {filteredChats.length === 0 ? (
@@ -373,32 +339,18 @@ const ChatList = () => {
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    {activeTab === "chats" ? (
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    ) : (
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    )}
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>
                 </div>
-                <p className="text-gray-400 mb-1">
-                  {activeTab === "chats" ? "No chats yet" : "No groups yet"}
-                </p>
+                <p className="text-gray-400 mb-1">No chats yet</p>
                 <p className="text-gray-500 text-sm">
-                  {activeTab === "chats"
-                    ? "Search for users to start chatting"
-                    : "Create a group to chat with multiple people"}
+                  Search for users to start chatting
                 </p>
                 <button
-                  onClick={() => {
-                    if (activeTab === "groups") {
-                      router.push("/group/new");
-                    } else {
-                      router.push("/search");
-                    }
-                  }}
+                  onClick={() => router.push("/search")}
                   className="mt-4 px-4 py-2 bg-primary text-dark rounded-md font-medium text-sm hover:bg-primary-dark transition-colors"
                 >
-                  {activeTab === "chats" ? "Find Friends" : "Create Group"}
+                  Find Friends
                 </button>
               </div>
             </div>
@@ -426,14 +378,7 @@ const ChatList = () => {
       {/* Create new chat/group button */}
       <div className="p-3 border-t border-gray-700 bg-dark-lighter">
         <button
-          onClick={() => {
-            if (activeTab === "groups") {
-              // Navigate to create group page
-              router.push("/group/new");
-            } else {
-              setIsSearching(true);
-            }
-          }}
+          onClick={() => setIsSearching(true)}
           className="w-full py-2 px-4 bg-primary hover:bg-primary-dark text-dark font-semibold rounded-lg transition flex items-center justify-center"
         >
           <svg
@@ -446,7 +391,7 @@ const ChatList = () => {
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          {activeTab === "groups" ? "Create Group" : "New Chat"}
+          New Chat
         </button>
       </div>
     </div>

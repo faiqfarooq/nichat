@@ -185,7 +185,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Page title */}
-      <div className="pt-20 pb-2 px-4 text-center">
+      <div className="pt-8 pb-2 px-4 text-center">
         <h1 className="text-2xl font-semibold text-white">Your Profile</h1>
       </div>
 

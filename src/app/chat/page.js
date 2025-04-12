@@ -11,19 +11,19 @@ import { getApiUrl } from "@/lib/apiUtils";
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
+
   const [chats, setChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Pagination
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const CHATS_PER_PAGE = 15;
-  
+
   const observerTarget = useRef(null);
 
   // Check if user is authenticated
@@ -41,7 +41,7 @@ export default function ChatPage() {
       } else {
         setLoadingMore(true);
       }
-      
+
       const response = await fetch(getApiUrl("/api/chats"));
 
       if (!response.ok) {
@@ -49,9 +49,12 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
+      
+      // Filter out group chats
+      const nonGroupChats = data.filter(chat => !chat.isGroup);
 
       // Sort by last message date
-      const sortedChats = data.sort((a, b) => {
+      const sortedChats = nonGroupChats.sort((a, b) => {
         if (!a.lastMessage && !b.lastMessage) return 0;
         if (!a.lastMessage) return 1;
         if (!b.lastMessage) return -1;
@@ -63,23 +66,25 @@ export default function ChatPage() {
       // Implement pagination
       const totalPages = Math.ceil(sortedChats.length / CHATS_PER_PAGE);
       setHasMore(pageNum < totalPages);
-      
+
       // Get chats for current page
       const paginatedChats = sortedChats.slice(0, pageNum * CHATS_PER_PAGE);
-      
+
       if (append) {
-        setChats(prevChats => {
+        setChats((prevChats) => {
           // Create a map of existing chat IDs to avoid duplicates
-          const existingChatIds = new Set(prevChats.map(chat => chat._id));
+          const existingChatIds = new Set(prevChats.map((chat) => chat._id));
           // Filter out chats that already exist
-          const newChats = paginatedChats.filter(chat => !existingChatIds.has(chat._id));
+          const newChats = paginatedChats.filter(
+            (chat) => !existingChatIds.has(chat._id)
+          );
           // Return combined array
           return [...prevChats, ...newChats];
         });
       } else {
         setChats(paginatedChats);
       }
-      
+
       // Apply search filter if there's a query
       if (searchQuery) {
         handleSearch(searchQuery);
@@ -98,46 +103,41 @@ export default function ChatPage() {
   // Handle search
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredChats(chats);
       return;
     }
-    
+
     const lowerCaseQuery = query.toLowerCase();
-    
-    // Filter chats by name
-    const filtered = chats.filter(chat => {
-      if (chat.isGroup) {
-        // For groups, search by group name
-        return chat.name.toLowerCase().includes(lowerCaseQuery);
-      } else {
-        // For 1-on-1 chats, search by other user's name
-        const otherUser = chat.participants.find(
-          participant => participant._id !== session?.user.id
-        );
-        return otherUser?.name.toLowerCase().includes(lowerCaseQuery);
-      }
+
+    // Filter chats by name (only for 1-on-1 chats)
+    const filtered = chats.filter((chat) => {
+      // For 1-on-1 chats, search by other user's name
+      const otherUser = chat.participants.find(
+        (participant) => participant._id !== session?.user.id
+      );
+      return otherUser?.name?.toLowerCase().includes(lowerCaseQuery);
     });
-    
+
     setFilteredChats(filtered);
   };
 
   // Intersection Observer for infinite scrolling
   useEffect(() => {
     if (!observerTarget.current || loading || loadingMore || !hasMore) return;
-    
+
     const observer = new IntersectionObserver(
-      entries => {
+      (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          setPage(prevPage => prevPage + 1);
+          setPage((prevPage) => prevPage + 1);
         }
       },
       { threshold: 0.5 }
     );
-    
+
     observer.observe(observerTarget.current);
-    
+
     return () => {
       if (observerTarget.current) {
         observer.unobserve(observerTarget.current);
@@ -164,13 +164,16 @@ export default function ChatPage() {
     return (
       <div className="h-full flex flex-col p-4 bg-dark">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white mb-4">All Chats</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">My Chats</h1>
           <div className="bg-dark-light h-10 rounded-lg animate-pulse"></div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center p-3 mb-3 bg-dark-lighter rounded-lg">
+            <div
+              key={i}
+              className="flex items-center p-3 mb-3 bg-dark-lighter rounded-lg"
+            >
               <div className="w-12 h-12 rounded-full bg-dark-light animate-pulse"></div>
               <div className="ml-3 flex-1">
                 <div className="h-4 bg-dark-light rounded w-3/4 mb-2 animate-pulse"></div>
@@ -187,23 +190,23 @@ export default function ChatPage() {
     <div className="h-full flex flex-col p-4 bg-dark">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-white">All Chats</h1>
-          <button 
-            onClick={() => router.push('/search')}
+          <h1 className="text-2xl font-bold text-white">My Chats</h1>
+          <button
+            onClick={() => router.push("/search")}
             className="px-4 py-2 bg-primary text-dark rounded-md font-medium text-sm hover:bg-primary-dark transition-colors flex items-center"
           >
-            <svg 
-              className="w-4 h-4 mr-2" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
             Search Users
@@ -245,7 +248,9 @@ export default function ChatPage() {
               {searchQuery ? "No chats match your search" : "No chats yet"}
             </p>
             <p className="text-gray-500 text-sm">
-              {searchQuery ? "Try a different search term" : "Start a conversation to see it here"}
+              {searchQuery
+                ? "Try a different search term"
+                : "Start a conversation to see it here"}
             </p>
             {searchQuery && (
               <button
@@ -267,7 +272,10 @@ export default function ChatPage() {
               className="space-y-2"
             >
               {filteredChats.map((chat) => (
-                <div key={chat._id} className="bg-dark-lighter rounded-lg overflow-hidden">
+                <div
+                  key={chat._id}
+                  className="bg-dark-lighter rounded-lg overflow-hidden"
+                >
                   <ChatItem
                     chat={chat}
                     active={false}
@@ -275,19 +283,19 @@ export default function ChatPage() {
                   />
                 </div>
               ))}
-              
+
               {/* Loading more indicator */}
               {loadingMore && (
                 <div className="py-4 flex justify-center">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
-              
+
               {/* Intersection observer target */}
               {hasMore && !loadingMore && (
                 <div ref={observerTarget} className="h-4"></div>
               )}
-              
+
               {/* End of list message */}
               {!hasMore && filteredChats.length > 0 && (
                 <div className="py-4 text-center text-gray-500 text-sm">

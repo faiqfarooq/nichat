@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { formatRelative } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,11 +11,13 @@ import CallModal from "@/components/call/CallModal";
 import { useSocket } from "@/hooks/useSocket";
 import { useCall } from "@/hooks/useCall";
 import { getApiUrl } from "@/lib/apiUtils";
+import Avatar from "../ui/Avatar";
 
 const ChatWindow = ({ chatId }) => {
   const { data: session } = useSession();
   const { socket } = useSocket();
   const { startCall, CallModal, isCallActive } = useCall();
+  const router = useRouter();
 
   const [messages, setMessages] = useState([]);
   const [chat, setChat] = useState(null);
@@ -27,6 +30,11 @@ const ChatWindow = ({ chatId }) => {
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -302,6 +310,121 @@ const ChatWindow = ({ chatId }) => {
     });
   };
 
+  // Handle view profile
+  const handleViewProfile = () => {
+    if (!chat) return;
+
+    const otherUser = chat.participants.find(
+      (participant) => participant._id !== session?.user?.id
+    );
+
+    if (otherUser) {
+      setSelectedUser(otherUser);
+      setShowUserProfileModal(true);
+    }
+  };
+
+  // Handle block user
+  const handleBlockUser = async () => {
+    if (!chat || isProcessing) return;
+
+    const otherUser = chat.participants.find(
+      (participant) => participant._id !== session?.user?.id
+    );
+
+    if (!otherUser) return;
+
+    try {
+      setIsProcessing(true);
+
+      const response = await fetch(getApiUrl(`/api/users/${otherUser._id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "block",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to block user");
+      }
+
+      // Redirect to dashboard after blocking
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error blocking user:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle unfollow user
+  const handleUnfollowUser = async () => {
+    if (!chat || isProcessing) return;
+
+    const otherUser = chat.participants.find(
+      (participant) => participant._id !== session?.user?.id
+    );
+
+    if (!otherUser) return;
+
+    try {
+      setIsProcessing(true);
+
+      const response = await fetch(getApiUrl(`/api/users/${otherUser._id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "unfollow",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to unfollow user");
+      }
+
+      // Show success message or update UI
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle leave group
+  const handleLeaveGroup = async () => {
+    if (!chat || !chat.isGroup || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+
+      const response = await fetch(getApiUrl(`/api/group/${chat._id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "leave",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to leave group");
+      }
+
+      // Redirect to dashboard after leaving
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error leaving group:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Set up socket listeners
   useEffect(() => {
     if (!socket || !chatId) return;
@@ -467,7 +590,11 @@ const ChatWindow = ({ chatId }) => {
         <div className="relative mr-3">
           {chat?.isGroup ? (
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold">
-              {chat?.name?.charAt(0).toUpperCase() || "G"}
+              <Avatar
+                src={chat.groupAvatar}
+                name={chat.name}
+                size="md"
+              />
             </div>
           ) : (
             <>
@@ -537,19 +664,143 @@ const ChatWindow = ({ chatId }) => {
             </svg>
           </button>
 
-          <button className="text-gray-400 hover:text-primary p-2 rounded-full hover:bg-dark-light transition-colors">
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          <div className="relative">
+            <button
+              className="text-gray-400 hover:text-primary p-2 rounded-full hover:bg-dark-light transition-colors"
+              onClick={() => setShowMenu(!showMenu)}
             >
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="19" cy="12" r="1"></circle>
-              <circle cx="5" cy="12" r="1"></circle>
-            </svg>
-          </button>
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+              </svg>
+            </button>
+
+            {/* Menu dropdown */}
+            {showMenu && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-dark-lighter border border-gray-700 rounded-md shadow-lg z-50">
+                {chat?.isGroup ? (
+                  <>
+                    <div className="p-3 border-b border-gray-700">
+                      <h3 className="text-white font-medium">Group Options</h3>
+                    </div>
+                    <button
+                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-dark-light hover:text-white transition-colors flex items-center"
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowParticipantsModal(true);
+                      }}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                      View Participants
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-dark-light hover:text-red-300 transition-colors flex items-center"
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleLeaveGroup();
+                      }}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      Leave Group
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-3 border-b border-gray-700">
+                      <h3 className="text-white font-medium">Chat Options</h3>
+                    </div>
+                    <button
+                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-dark-light hover:text-white transition-colors flex items-center"
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleViewProfile();
+                      }}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      View Profile
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-dark-light hover:text-white transition-colors flex items-center"
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleBlockUser();
+                      }}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                      </svg>
+                      Block User
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-dark-light hover:text-white transition-colors flex items-center"
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleUnfollowUser();
+                      }}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <line x1="17" y1="8" x2="23" y2="8"></line>
+                        <line x1="20" y1="5" x2="20" y2="11"></line>
+                      </svg>
+                      Unfollow
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -653,6 +904,229 @@ const ChatWindow = ({ chatId }) => {
           ref={messageInputRef}
         />
       </motion.div>
+
+      {/* Participants Modal */}
+      {showParticipantsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-dark-lighter rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
+          >
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-white font-medium text-lg">
+                Group Participants
+              </h3>
+              <button
+                onClick={() => setShowParticipantsModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-2">
+              {chat?.participants?.map((participant) => (
+                <div
+                  key={participant._id}
+                  className="flex items-center p-3 hover:bg-dark-light rounded-md transition-colors"
+                >
+                  <div className="relative mr-3">
+                    <img
+                      src={
+                        participant.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          participant.name
+                        )}&background=34B7F1&color=fff`
+                      }
+                      alt={participant.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    {participant.isOnline && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-lighter"></span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-white font-medium truncate">
+                      {participant.name}
+                      {participant._id === session?.user?.id && " (You)"}
+                    </h4>
+                    <p className="text-gray-400 text-xs truncate">
+                      {participant.isOnline
+                        ? "Online"
+                        : participant.lastSeen
+                        ? `Last seen ${formatRelative(
+                            new Date(participant.lastSeen),
+                            new Date()
+                          )}`
+                        : ""}
+                    </p>
+                  </div>
+                  {participant._id === chat?.admin && (
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                      Admin
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t border-gray-700">
+              <button
+                onClick={() => setShowParticipantsModal(false)}
+                className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* User Profile Modal */}
+      {showUserProfileModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-dark-lighter rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
+          >
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-white font-medium text-lg">User Profile</h3>
+              <button
+                onClick={() => setShowUserProfileModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4">
+              {/* User Profile Content */}
+              <div className="flex flex-col items-center">
+                <div className="relative mb-4">
+                  <div className="border-4 border-dark-lighter shadow-lg shadow-primary/20 rounded-full">
+                    <Avatar
+                      src={selectedUser.avatar}
+                      name={selectedUser.name}
+                      size="2xl"
+                    />
+                  </div>
+                  {selectedUser.isOnline && (
+                    <span className="absolute bottom-1 right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-lighter"></span>
+                  )}
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {selectedUser.name}
+                </h2>
+
+                {selectedUser.status && (
+                  <div className="mt-2 text-gray-300 text-center max-w-md">
+                    <svg
+                      className="w-4 h-4 inline-block mr-1 text-gray-500"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z" />
+                    </svg>
+                    "{selectedUser.status}"
+                  </div>
+                )}
+
+                {/* User Stats */}
+                <div className="grid grid-cols-2 gap-4 w-full mt-6">
+                  <div className="bg-dark p-3 rounded-lg text-center">
+                    <p className="text-xl font-bold text-white">
+                      {selectedUser.followers?.length || 0}
+                    </p>
+                    <p className="text-xs text-gray-400">Followers</p>
+                  </div>
+                  <div className="bg-dark p-3 rounded-lg text-center">
+                    <p className="text-xl font-bold text-white">
+                      {selectedUser.following?.length || 0}
+                    </p>
+                    <p className="text-xs text-gray-400">Following</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-3 mt-6 justify-center w-full">
+                  <button
+                    onClick={() => {
+                      setShowUserProfileModal(false);
+                      handleBlockUser();
+                    }}
+                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium rounded-lg transition-colors flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    Block
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserProfileModal(false);
+                      handleUnfollowUser();
+                    }}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <line x1="17" y1="8" x2="23" y2="8"></line>
+                      <line x1="20" y1="5" x2="20" y2="11"></line>
+                    </svg>
+                    Unfollow
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-700">
+              <button
+                onClick={() => setShowUserProfileModal(false)}
+                className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

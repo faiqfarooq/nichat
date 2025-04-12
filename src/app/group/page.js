@@ -155,7 +155,7 @@ export default function GroupsPage() {
 
   // Navigate to group chat
   const navigateToGroup = (groupId) => {
-    router.push(`/chat/${groupId}`);
+    router.push(`/group/${groupId}`);
   };
 
   // Loading skeleton
