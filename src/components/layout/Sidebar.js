@@ -34,8 +34,8 @@ const Sidebar = () => {
     },
 
     {
-      name: "Groups",
-      href: "/groups",
+      name: "Group",
+      href: "/group",
       icon: (
         <svg
           className="w-6 h-6"

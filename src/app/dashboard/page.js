@@ -180,7 +180,7 @@ export default function Dashboard() {
               </Link>
 
               <Link
-                href="/groups/new"
+                href="/group/new"
                 className="bg-dark-lighter hover:bg-dark-light rounded-xl p-4 border border-gray-800 flex flex-col items-center justify-center text-center transition-colors"
               >
                 <div className="bg-secondary/20 p-3 rounded-full mb-2">

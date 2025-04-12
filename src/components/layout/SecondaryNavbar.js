@@ -41,7 +41,7 @@ const SecondaryNavbar = () => {
 
         <div className="flex items-center space-x-4">
           <Link
-            href="/groups/new"
+            href="/group/new"
             className="text-gray-300 hover:text-primary relative rounded-full p-2 hover:bg-dark-light transition-all duration-300"
           >
             <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>

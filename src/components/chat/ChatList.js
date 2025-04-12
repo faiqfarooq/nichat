@@ -9,7 +9,6 @@ import { useSocket } from "@/hooks/useSocket";
 import SearchBar from "../search/SearcgBar";
 import { getApiUrl } from "@/lib/apiUtils";
 
-
 const ChatList = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -150,8 +149,9 @@ const ChatList = () => {
             // Handle both Map objects and plain objects from API
             let currentUnreadCount = 0;
             if (chat.unreadCount) {
-              if (typeof chat.unreadCount.get === 'function') {
-                currentUnreadCount = chat.unreadCount.get(session?.user.id) || 0;
+              if (typeof chat.unreadCount.get === "function") {
+                currentUnreadCount =
+                  chat.unreadCount.get(session?.user.id) || 0;
               } else {
                 currentUnreadCount = chat.unreadCount[session?.user.id] || 0;
               }
@@ -388,12 +388,12 @@ const ChatList = () => {
                     ? "Search for users to start chatting"
                     : "Create a group to chat with multiple people"}
                 </p>
-                <button 
+                <button
                   onClick={() => {
                     if (activeTab === "groups") {
-                      router.push('/groups/new');
+                      router.push("/group/new");
                     } else {
-                      router.push('/search');
+                      router.push("/search");
                     }
                   }}
                   className="mt-4 px-4 py-2 bg-primary text-dark rounded-md font-medium text-sm hover:bg-primary-dark transition-colors"
@@ -429,7 +429,7 @@ const ChatList = () => {
           onClick={() => {
             if (activeTab === "groups") {
               // Navigate to create group page
-              router.push('/groups/new');
+              router.push("/group/new");
             } else {
               setIsSearching(true);
             }
