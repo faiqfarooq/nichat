@@ -15,12 +15,18 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Parse request body
+    const requestBody = await request.json();
+    
     const {
       chatId,
       content,
       contentType = "text",
       replyTo = null,
-    } = await request.json();
+      fileUrl = null,
+      fileName = null,
+      fileSize = null,
+    } = requestBody;
 
     if (!chatId || !content) {
       return NextResponse.json(
@@ -45,7 +51,7 @@ export async function POST(request) {
         { status: 403 }
       );
     }
-
+    
     // Create the message
     const message = await Message.create({
       chat: chatId,
@@ -53,6 +59,9 @@ export async function POST(request) {
       content,
       contentType,
       replyTo,
+      fileUrl,
+      fileName,
+      fileSize,
       readBy: [session.user.id], // Mark as read by sender
     });
 
@@ -141,7 +150,19 @@ export async function GET(request) {
     }
 
     // Get messages
-    const messages = await Message.find(query)
+    const messages = await Message.find({
+      ...query,
+      $or: [
+        { deletedFor: { $ne: session.user.id } },
+        { deletedFor: { $exists: false } }
+      ],
+      $and: [
+        { $or: [
+          { deletedForEveryone: false },
+          { deletedForEveryone: { $exists: false } }
+        ]}
+      ]
+    })
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate("sender", "name avatar")

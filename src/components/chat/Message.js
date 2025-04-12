@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { formatRelative } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import Avatar from "@/components/ui/Avatar";
@@ -11,12 +11,28 @@ const Message = ({
   isGroupChat,
   previousMessage,
   onReplyClick,
+  onEditMessage,
+  onDeleteMessage,
   animate = false,
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [showDeleteOptions, setShowDeleteOptions] = useState(false);
 
-  const { content, contentType, sender, createdAt, readBy, replyTo } = message;
+  const { 
+    content, 
+    contentType, 
+    sender, 
+    createdAt, 
+    readBy, 
+    replyTo, 
+    isEdited, 
+    deletedForEveryone 
+  } = message;
+  
+  const editInputRef = useRef(null);
 
   // Check if this message is from the same sender as the previous one
   const isSameSender =
@@ -31,11 +47,109 @@ const Message = ({
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Initialize edit content when editing starts
+  useEffect(() => {
+    if (isEditing) {
+      setEditedContent(content);
+      // Focus the input field when editing starts
+      setTimeout(() => {
+        editInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isEditing, content]);
+  
+  // Handle edit submit
+  const handleEditSubmit = (e) => {
+    e?.preventDefault();
+    
+    if (!editedContent.trim() || editedContent.trim() === content) {
+      setIsEditing(false);
+      return;
+    }
+    
+    if (onEditMessage) {
+      onEditMessage(message._id, editedContent.trim());
+    }
+    
+    setIsEditing(false);
+  };
+  
+  // Handle key press in edit input
+  const handleEditKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleEditSubmit();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+  
+  // Handle delete options
+  const handleDelete = (deleteForEveryone = false) => {
+    if (onDeleteMessage) {
+      onDeleteMessage(message._id, deleteForEveryone);
+    }
+    setShowDeleteOptions(false);
+  };
+
   // Handle different content types
   const renderContent = () => {
+    // If message is deleted for everyone
+    if (deletedForEveryone) {
+      return (
+        <div className="italic text-gray-400 text-sm">
+          This message was deleted
+        </div>
+      );
+    }
+    
+    // If message is being edited
+    if (isEditing && contentType === 'text') {
+      return (
+        <form onSubmit={handleEditSubmit} className="w-full">
+          <textarea
+            ref={editInputRef}
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            onKeyDown={handleEditKeyPress}
+            className="w-full px-3 py-2 bg-dark rounded border border-gray-700 focus:border-primary focus:outline-none text-white text-sm resize-none"
+            rows={Math.max(1, (editedContent.match(/\n/g) || []).length + 1)}
+          />
+          <div className="flex justify-between items-center mt-2 text-xs">
+            <span className="text-gray-400">
+              Press Esc to cancel, Enter to save
+            </span>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-2 py-1 rounded bg-dark-light text-gray-300 hover:bg-dark-lighter"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-2 py-1 rounded bg-primary text-dark hover:bg-primary-dark"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </form>
+      );
+    }
+    
+    // Regular message content
     switch (contentType) {
       case "text":
-        return <p className="whitespace-pre-wrap">{content}</p>;
+        return (
+          <div>
+            <p className="whitespace-pre-wrap">{content}</p>
+            {isEdited && (
+              <span className="text-xs text-gray-500 ml-1">(edited)</span>
+            )}
+          </div>
+        );
       case "image":
         return (
           <div className="my-1 relative group">
@@ -56,11 +170,18 @@ const Message = ({
         return (
           <div className="my-1">
             <div className="bg-dark-light p-2 rounded-lg">
-              <audio controls className="max-w-xs">
+              <audio controls className="max-w-xs w-full">
+                <source src={message.fileUrl} type="audio/webm" />
                 <source src={message.fileUrl} type="audio/mpeg" />
+                <source src={message.fileUrl} type="audio/mp4" />
+                <source src={message.fileUrl} type="audio/wav" />
                 Your browser does not support the audio element.
               </audio>
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-xs text-gray-400 mt-1 flex items-center">
+                <svg className="w-3 h-3 mr-1 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                </svg>
                 {message.fileName || "Audio message"}
               </div>
             </div>
@@ -255,7 +376,7 @@ const Message = ({
 
           {/* Message options */}
           <AnimatePresence>
-            {showOptions && (
+            {showOptions && !showDeleteOptions && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -272,6 +393,7 @@ const Message = ({
                     onReplyClick(message);
                   }}
                   className="p-1.5 hover:bg-dark-light rounded-md text-gray-300 hover:text-primary transition-colors"
+                  title="Reply"
                 >
                   <svg
                     className="w-4 h-4"
@@ -285,21 +407,38 @@ const Message = ({
                   </svg>
                 </button>
 
-                <button className="p-1.5 hover:bg-dark-light rounded-md text-gray-300 hover:text-primary transition-colors">
-                  <svg
-                    className="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+                {isOwnMessage && contentType === 'text' && !deletedForEveryone && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                      setShowOptions(false);
+                    }}
+                    className="p-1.5 hover:bg-dark-light rounded-md text-gray-300 hover:text-primary transition-colors"
+                    title="Edit"
                   >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                )}
 
-                {isOwnMessage && (
-                  <button className="p-1.5 hover:bg-dark-light rounded-md text-gray-300 hover:text-red-500 transition-colors">
+                {!deletedForEveryone && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteOptions(true);
+                    }}
+                    className="p-1.5 hover:bg-dark-light rounded-md text-gray-300 hover:text-red-500 transition-colors"
+                    title="Delete"
+                  >
                     <svg
                       className="w-4 h-4"
                       viewBox="0 0 24 24"
@@ -312,6 +451,56 @@ const Message = ({
                     </svg>
                   </button>
                 )}
+              </motion.div>
+            )}
+            
+            {/* Delete options menu */}
+            {showDeleteOptions && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className={`absolute ${
+                  isOwnMessage
+                    ? "left-0 -translate-x-full -ml-2"
+                    : "right-0 translate-x-full mr-2"
+                } top-0 bg-dark-lighter rounded-lg shadow-lg p-2 w-48`}
+              >
+                <div className="text-white text-sm font-medium mb-2">Delete message?</div>
+                
+                <div className="space-y-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(false); // Delete for me
+                    }}
+                    className="w-full text-left px-3 py-2 rounded text-sm hover:bg-dark-light text-gray-300 hover:text-white transition-colors"
+                  >
+                    Delete for me
+                  </button>
+                  
+                  {isOwnMessage && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(true); // Delete for everyone
+                      }}
+                      className="w-full text-left px-3 py-2 rounded text-sm hover:bg-dark-light text-gray-300 hover:text-white transition-colors"
+                    >
+                      Delete for everyone
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteOptions(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded text-sm hover:bg-dark-light text-gray-400 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

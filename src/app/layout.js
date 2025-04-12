@@ -3,6 +3,7 @@ import AuthProvider from '@/providers/AuthProvider';
 import SocketProvider from '@/providers/SocketProvider';
 import { CloudinaryProvider } from '@/providers/CloudinaryProvider';
 import ReduxProvider from '@/providers/ReduxProvider';
+import CallNotificationProvider from '@/providers/CallNotificationProvider';
 
 export const metadata = {
   title: 'Chat App',
@@ -17,7 +18,9 @@ export default function RootLayout({ children }) {
           <ReduxProvider>
             <SocketProvider>
               <CloudinaryProvider>
-                {children}
+                <CallNotificationProvider>
+                  {children}
+                </CallNotificationProvider>
               </CloudinaryProvider>
             </SocketProvider>
           </ReduxProvider>

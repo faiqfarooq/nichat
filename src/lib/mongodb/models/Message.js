@@ -45,6 +45,24 @@ const MessageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedFor: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    deletedForEveryone: {
+      type: Boolean,
+      default: false,
+    },
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+    originalContent: {
+      type: String,
+      default: null,
+    },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',
@@ -60,10 +78,10 @@ const MessageSchema = new mongoose.Schema(
 MessageSchema.index({ chat: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1 });
 
-// Clean message content if deleted
-MessageSchema.pre('find', function () {
-  this.where({ isDeleted: false });
-});
+// We no longer need this pre-find hook since we're handling deletion filtering in the API routes
+// MessageSchema.pre('find', function () {
+//   this.where({ isDeleted: false });
+// });
 
 // Don't recreate the model if it already exists
 const Message = mongoose.models.Message || mongoose.model('Message', MessageSchema);
