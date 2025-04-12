@@ -108,7 +108,7 @@ export async function GET(req) {
         }
       });
       
-      // Handle call offer
+      // Handle call offer with enhanced signaling
       socket.on('call:offer', async (data) => {
         try {
           const { callId, recipientId, callType, offer, isIceRestart } = data;
@@ -141,7 +141,7 @@ export async function GET(req) {
           
           console.log(`Recipient found: ${recipient.name}`);
           
-          // Send incoming call notification to recipient
+          // Send incoming call notification to recipient with enhanced metadata
           io.to(recipientId).emit('call:incoming', {
             callId,
             callType,
@@ -151,6 +151,8 @@ export async function GET(req) {
               name: socket.user.name,
               avatar: socket.user.avatar,
             },
+            timestamp: Date.now(),
+            priority: 'high', // Mark as high priority for better notification handling
           });
           
           console.log(`Incoming call notification emitted to ${recipientId}`);
@@ -159,11 +161,16 @@ export async function GET(req) {
           socket.join(`call:${callId}`);
           console.log(`${socket.user.name} joined call room: call:${callId}`);
           
-          // Send confirmation to caller
+          // Send confirmation to caller with enhanced metadata
           socket.emit('call:initiated', {
             callId,
             recipientId,
             callType,
+            timestamp: Date.now(),
+            networkInfo: {
+              server: process.env.NODE_ENV || 'development',
+              region: process.env.VERCEL_REGION || 'local',
+            },
           });
         } catch (error) {
           console.error('Error handling call offer:', error);
@@ -242,22 +249,46 @@ export async function GET(req) {
         }
       });
       
-      // Handle ICE candidates
+      // Handle ICE candidates with enhanced reliability
       socket.on('call:ice-candidate', (data) => {
         try {
           const { callId, candidate } = data;
           
+          // Skip empty candidates
+          if (!candidate || !candidate.candidate) {
+            return;
+          }
+          
+          // Add priority information for better candidate handling
+          const enhancedCandidate = {
+            ...candidate,
+            priority: candidate.priority || 0,
+            timestamp: Date.now(),
+          };
+          
           // Broadcast ICE candidate to all users in the call room
           socket.to(`call:${callId}`).emit('call:ice-candidate', {
             callId,
-            candidate,
+            candidate: enhancedCandidate,
           });
+          
+          // For relay candidates (which are more important for NAT traversal),
+          // send them again after a short delay to improve reliability
+          if (candidate.candidate && candidate.candidate.indexOf('typ relay') > -1) {
+            setTimeout(() => {
+              socket.to(`call:${callId}`).emit('call:ice-candidate', {
+                callId,
+                candidate: enhancedCandidate,
+                isRetransmission: true,
+              });
+            }, 500);
+          }
         } catch (error) {
           console.error('Error handling ICE candidate:', error);
         }
       });
       
-      // Handle ICE restart request
+      // Handle ICE restart request with enhanced reliability
       socket.on('call:ice-restart', (data) => {
         try {
           const { callId } = data;
@@ -267,9 +298,72 @@ export async function GET(req) {
           // Broadcast ICE restart request to all users in the call room
           socket.to(`call:${callId}`).emit('call:ice-restart', {
             callId,
+            timestamp: Date.now(),
+            initiator: {
+              id: socket.user.id,
+              name: socket.user.name,
+            },
           });
+          
+          // Send again after a short delay to improve reliability
+          setTimeout(() => {
+            socket.to(`call:${callId}`).emit('call:ice-restart', {
+              callId,
+              timestamp: Date.now(),
+              initiator: {
+                id: socket.user.id,
+                name: socket.user.name,
+              },
+              isRetransmission: true,
+            });
+          }, 1000);
         } catch (error) {
           console.error('Error handling ICE restart request:', error);
+        }
+      });
+      
+      // Handle call quality metrics for monitoring and analytics
+      socket.on('call:quality-metrics', (data) => {
+        try {
+          const { callId, metrics } = data;
+          
+          // Log metrics for monitoring
+          console.log(`Call quality metrics for call ${callId}:`, {
+            userId: socket.user.id,
+            userName: socket.user.name,
+            timestamp: Date.now(),
+            ...metrics,
+          });
+          
+          // Broadcast quality metrics to other participants
+          // This allows UI to show connection quality to users
+          socket.to(`call:${callId}`).emit('call:quality-update', {
+            callId,
+            userId: socket.user.id,
+            userName: socket.user.name,
+            quality: metrics.overall,
+            timestamp: Date.now(),
+          });
+        } catch (error) {
+          console.error('Error handling call quality metrics:', error);
+        }
+      });
+      
+      // Handle adaptive bitrate requests
+      socket.on('call:bitrate-request', (data) => {
+        try {
+          const { callId, maxBitrate, minBitrate } = data;
+          
+          // Forward bitrate request to other participants
+          socket.to(`call:${callId}`).emit('call:bitrate-request', {
+            callId,
+            maxBitrate,
+            minBitrate,
+            userId: socket.user.id,
+            timestamp: Date.now(),
+          });
+        } catch (error) {
+          console.error('Error handling bitrate request:', error);
         }
       });
       

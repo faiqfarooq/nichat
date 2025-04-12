@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/hooks/useSocket";
 import { v4 as uuidv4 } from "uuid";
+import * as WebRTC from "@/lib/webrtc";
 
 const CallModal = ({
   isOpen,
@@ -34,54 +35,47 @@ const CallModal = ({
   const callTimerRef = useRef(null);
   const callIdRef = useRef(isIncoming ? null : uuidv4());
 
-  // Configuration for WebRTC
-  const configuration = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" },
-      {
-        urls: "turn:numb.viagenie.ca",
-        credential: "muazkh",
-        username: "webrtc@live.com",
-      },
-    ],
-    iceCandidatePoolSize: 10,
-  };
+  // Use enhanced WebRTC configuration
+  const [callQuality, setCallQuality] = useState({ overall: 100 });
+  const [networkStatus, setNetworkStatus] = useState("stable");
+  const adaptiveBitrateCleanupRef = useRef(null);
+  const networkMonitorCleanupRef = useRef(null);
+  const qualityMonitorRef = useRef(null);
+  const videoSenderRef = useRef(null);
 
-  // Format call duration
+  // Use WebRTC utility for formatting call duration
   const formatDuration = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
-      .toString()
-      .padStart(2, "0")}`;
+    return WebRTC.formatCallDuration(seconds);
   };
 
-  // Initialize WebRTC
+  // Initialize WebRTC with enhanced functionality
   const initializeWebRTC = async () => {
     try {
-      // Create peer connection
-      const peerConnection = new RTCPeerConnection(configuration);
+      // Create peer connection with enhanced configuration
+      const peerConnection = WebRTC.createPeerConnection();
       peerConnectionRef.current = peerConnection;
 
-      // Get local media stream
-      const constraints = {
-        audio: true,
-        video: callType === "video" ? { width: 1280, height: 720 } : false,
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Get local media stream with enhanced constraints for better quality
+      const stream = await WebRTC.getUserMedia(
+        true, // Audio enabled
+        callType === "video" // Video enabled only for video calls
+      );
+      
       setLocalStream(stream);
 
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
 
-      // Add tracks to peer connection
-      stream.getTracks().forEach((track) => {
-        peerConnectionRef.current.addTrack(track, stream);
-      });
+      // Add tracks to peer connection using utility function
+      const senders = WebRTC.addTracksToConnection(peerConnection, stream);
+      
+      // Store video sender for adaptive bitrate control
+      if (callType === "video") {
+        videoSenderRef.current = senders.find(
+          sender => sender.track && sender.track.kind === "video"
+        );
+      }
 
       // Set up remote stream
       const remoteStream = new MediaStream();
@@ -108,33 +102,53 @@ const CallModal = ({
         }
       };
 
-      // Handle connection state changes
+      // Handle connection state changes with enhanced descriptions
       peerConnectionRef.current.onconnectionstatechange = () => {
-        setConnectionState(peerConnectionRef.current.connectionState);
+        const state = peerConnectionRef.current.connectionState;
+        setConnectionState(state);
+        
+        // Get human-readable description
+        const stateDescription = WebRTC.getConnectionStateDescription(state);
+        console.log(`Connection state changed: ${stateDescription}`);
 
-        if (peerConnectionRef.current.connectionState === "connected") {
+        if (state === "connected") {
           setCallStatus("connected");
           startCallTimer();
-        } else if (peerConnectionRef.current.connectionState === "failed") {
+          
+          // Set up adaptive bitrate control for video calls
+          if (callType === "video" && videoSenderRef.current) {
+            adaptiveBitrateCleanupRef.current = WebRTC.setupAdaptiveBitrate(
+              peerConnectionRef.current,
+              videoSenderRef.current
+            );
+          }
+          
+          // Start quality monitoring
+          startQualityMonitoring();
+        } else if (state === "failed") {
           // Try ICE restart
           handleIceRestart();
-        } else if (
-          peerConnectionRef.current.connectionState === "disconnected"
-        ) {
+        } else if (state === "disconnected") {
           setCallStatus("reconnecting");
+          setNetworkStatus("unstable");
         }
       };
+      
+      // Set up network change monitoring
+      networkMonitorCleanupRef.current = WebRTC.handleNetworkChanges(
+        peerConnectionRef.current,
+        handleIceRestart
+      );
 
-      // If outgoing call, create and send offer
+      // If outgoing call, create and send offer with enhanced options
       if (!isIncoming) {
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
+        const offer = await WebRTC.createOffer(peerConnectionRef.current, false);
 
         socket.emit("call:offer", {
           callId: callIdRef.current,
           recipientId: calleeId,
           callType,
-          offer: peerConnectionRef.current.localDescription,
+          offer: offer,
         });
 
         setCallStatus("calling");
@@ -144,20 +158,51 @@ const CallModal = ({
       setCallStatus("error");
     }
   };
+  
+  // Start monitoring call quality
+  const startQualityMonitoring = () => {
+    if (qualityMonitorRef.current) {
+      clearInterval(qualityMonitorRef.current);
+    }
+    
+    qualityMonitorRef.current = setInterval(async () => {
+      if (!peerConnectionRef.current) return;
+      
+      try {
+        // Get call quality metrics
+        const metrics = await WebRTC.getCallQualityMetrics(peerConnectionRef.current);
+        if (!metrics) return;
+        
+        // Calculate quality score
+        const qualityScore = WebRTC.calculateCallQualityScore(metrics);
+        setCallQuality(qualityScore);
+        
+        // Update network status based on quality
+        if (qualityScore.overall < 50) {
+          setNetworkStatus("poor");
+        } else if (qualityScore.overall < 75) {
+          setNetworkStatus("fair");
+        } else {
+          setNetworkStatus("good");
+        }
+      } catch (error) {
+        console.error("Error monitoring call quality:", error);
+      }
+    }, 5000); // Check every 5 seconds
+  };
 
-  // Handle incoming call
+  // Handle incoming call with enhanced error handling
   const handleIncomingCall = async (offer) => {
     try {
-      await peerConnectionRef.current.setRemoteDescription(
-        new RTCSessionDescription(offer)
-      );
+      // Set remote description with enhanced error handling
+      await WebRTC.setRemoteDescription(peerConnectionRef.current, offer);
 
-      const answer = await peerConnectionRef.current.createAnswer();
-      await peerConnectionRef.current.setLocalDescription(answer);
+      // Create answer with enhanced options
+      const answer = await WebRTC.createAnswer(peerConnectionRef.current);
 
       socket.emit("call:answer", {
         callId: callIdRef.current,
-        answer: peerConnectionRef.current.localDescription,
+        answer: answer,
       });
 
       setCallStatus("connecting");
@@ -167,36 +212,30 @@ const CallModal = ({
     }
   };
 
-  // Handle ICE restart
+  // Handle ICE restart with enhanced functionality
   const handleIceRestart = async () => {
     try {
-      if (
-        peerConnectionRef.current &&
-        peerConnectionRef.current.connectionState === "failed"
-      ) {
-        // Notify the other peer about ICE restart
-        socket.emit("call:ice-restart", {
-          callId: callIdRef.current,
-        });
+      if (!peerConnectionRef.current) return;
+      
+      // Notify the other peer about ICE restart
+      socket.emit("call:ice-restart", {
+        callId: callIdRef.current,
+      });
 
-        // Create a new offer with ICE restart
-        const offer = await peerConnectionRef.current.createOffer({
-          iceRestart: true,
-        });
+      // Create a new offer with ICE restart using enhanced options
+      const offer = await WebRTC.createOffer(peerConnectionRef.current, true);
 
-        await peerConnectionRef.current.setLocalDescription(offer);
+      // Send the new offer
+      socket.emit("call:offer", {
+        callId: callIdRef.current,
+        recipientId: isIncoming ? callerId : calleeId,
+        callType,
+        offer: offer,
+        isIceRestart: true,
+      });
 
-        // Send the new offer
-        socket.emit("call:offer", {
-          callId: callIdRef.current,
-          recipientId: isIncoming ? callerId : calleeId,
-          callType,
-          offer: peerConnectionRef.current.localDescription,
-          isIceRestart: true,
-        });
-
-        setCallStatus("reconnecting");
-      }
+      setCallStatus("reconnecting");
+      setNetworkStatus("reconnecting");
     } catch (error) {
       console.error("Error during ICE restart:", error);
     }
@@ -257,51 +296,47 @@ const CallModal = ({
     onClose();
   };
 
-  // Toggle audio mute
+  // Toggle audio mute using WebRTC utility
   const toggleAudio = () => {
     if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
+      const newState = WebRTC.toggleAudio(localStream);
+      setIsMuted(!newState);
     }
   };
 
-  // Toggle video
+  // Toggle video using WebRTC utility
   const toggleVideo = () => {
     if (localStream && callType === "video") {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoOff(!videoTrack.enabled);
-      }
+      const newState = WebRTC.toggleVideo(localStream);
+      setIsVideoOff(!newState);
     }
   };
 
-  // Toggle screen sharing
+  // Toggle screen sharing with enhanced functionality
   const toggleScreenSharing = async () => {
     try {
       if (isScreenSharing) {
         // Stop screen sharing and revert to camera
-        const constraints = {
-          audio: true,
-          video: callType === "video" ? { width: 1280, height: 720 } : false,
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await WebRTC.getUserMedia(
+          true,
+          callType === "video"
+        );
 
         // Replace tracks in peer connection
         const senders = peerConnectionRef.current.getSenders();
-
-        stream.getTracks().forEach((track, index) => {
-          if (senders[index]) {
-            senders[index].replaceTrack(track);
-          }
-        });
+        
+        // Find video sender
+        const videoSender = senders.find(
+          sender => sender.track && sender.track.kind === "video"
+        );
+        
+        // Replace video track
+        if (videoSender && stream.getVideoTracks()[0]) {
+          await WebRTC.replaceTrack(videoSender, stream.getVideoTracks()[0]);
+        }
 
         // Update local stream
-        localStream.getTracks().forEach((track) => track.stop());
+        WebRTC.stopMediaStream(localStream);
         setLocalStream(stream);
 
         if (localVideoRef.current) {
@@ -310,20 +345,17 @@ const CallModal = ({
 
         setIsScreenSharing(false);
       } else {
-        // Start screen sharing
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
-        });
+        // Start screen sharing with enhanced constraints
+        const screenStream = await WebRTC.getDisplayMedia(false);
 
         // Replace video track in peer connection
         const senders = peerConnectionRef.current.getSenders();
         const videoSender = senders.find(
-          (sender) => sender.track && sender.track.kind === "video"
+          sender => sender.track && sender.track.kind === "video"
         );
 
         if (videoSender && screenStream.getVideoTracks()[0]) {
-          videoSender.replaceTrack(screenStream.getVideoTracks()[0]);
+          await WebRTC.replaceTrack(videoSender, screenStream.getVideoTracks()[0]);
         }
 
         // Keep audio from original stream
@@ -358,17 +390,35 @@ const CallModal = ({
     }
   };
 
-  // Clean up call resources
+  // Clean up call resources with enhanced cleanup
   const cleanupCall = () => {
     // Stop call timer
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current);
       callTimerRef.current = null;
     }
+    
+    // Stop quality monitoring
+    if (qualityMonitorRef.current) {
+      clearInterval(qualityMonitorRef.current);
+      qualityMonitorRef.current = null;
+    }
+    
+    // Clean up adaptive bitrate control
+    if (adaptiveBitrateCleanupRef.current) {
+      adaptiveBitrateCleanupRef.current();
+      adaptiveBitrateCleanupRef.current = null;
+    }
+    
+    // Clean up network monitor
+    if (networkMonitorCleanupRef.current) {
+      networkMonitorCleanupRef.current();
+      networkMonitorCleanupRef.current = null;
+    }
 
-    // Stop local media tracks
+    // Stop local media tracks using WebRTC utility
     if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
+      WebRTC.stopMediaStream(localStream);
       setLocalStream(null);
     }
 
@@ -385,6 +435,8 @@ const CallModal = ({
     setIsMuted(false);
     setIsVideoOff(callType === "audio");
     setIsScreenSharing(false);
+    setCallQuality({ overall: 100 });
+    setNetworkStatus("stable");
   };
 
   // Set up socket event listeners
@@ -427,13 +479,11 @@ const CallModal = ({
       }
     };
 
-    // Handle ICE candidates
+    // Handle ICE candidates with enhanced error handling
     const handleIceCandidate = async (data) => {
       if (data.callId === callIdRef.current && data.candidate) {
         try {
-          await peerConnectionRef.current.addIceCandidate(
-            new RTCIceCandidate(data.candidate)
-          );
+          await WebRTC.addIceCandidate(peerConnectionRef.current, data.candidate);
         } catch (error) {
           console.error("Error adding ICE candidate:", error);
         }
@@ -585,30 +635,29 @@ const CallModal = ({
               </span>
             </div>
 
-            {/* Connection quality indicator */}
+            {/* Enhanced connection quality indicator */}
             {callStatus === "connected" && (
-              <div className="flex space-x-1">
-                <div
-                  className={`h-3 w-1 rounded-sm ${
-                    connectionState === "connected"
-                      ? "bg-green-500"
-                      : "bg-gray-600"
-                  }`}
-                ></div>
-                <div
-                  className={`h-4 w-1 rounded-sm ${
-                    connectionState === "connected"
-                      ? "bg-green-500"
-                      : "bg-gray-600"
-                  }`}
-                ></div>
-                <div
-                  className={`h-5 w-1 rounded-sm ${
-                    connectionState === "connected"
-                      ? "bg-green-500"
-                      : "bg-gray-600"
-                  }`}
-                ></div>
+              <div className="flex items-center">
+                <div className="flex space-x-1 mr-2">
+                  <div
+                    className={`h-3 w-1 rounded-sm ${
+                      callQuality.overall >= 25 ? "bg-red-500" : "bg-gray-600"
+                    }`}
+                  ></div>
+                  <div
+                    className={`h-4 w-1 rounded-sm ${
+                      callQuality.overall >= 50 ? "bg-yellow-500" : "bg-gray-600"
+                    }`}
+                  ></div>
+                  <div
+                    className={`h-5 w-1 rounded-sm ${
+                      callQuality.overall >= 75 ? "bg-green-500" : "bg-gray-600"
+                    }`}
+                  ></div>
+                </div>
+                <span className="text-xs text-white opacity-80">
+                  {WebRTC.getCallQualityDescription(callQuality.overall)}
+                </span>
               </div>
             )}
           </div>
