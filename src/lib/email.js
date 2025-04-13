@@ -5,8 +5,7 @@ import nodemailer from "nodemailer";
  * @returns {Object} Nodemailer transporter
  */
 function getEmailTransporter() {
-  // For production, use actual SMTP settings
-
+  // Use the same SMTP settings for both production and development
   return nodemailer.createTransport({
     host: process.env.EMAIL_SERVER_HOST,
     port: process.env.EMAIL_SERVER_PORT,
@@ -16,8 +15,9 @@ function getEmailTransporter() {
       pass: process.env.EMAIL_SERVER_PASSWORD,
     },
   });
-
-  // For development, log emails to console
+  
+  // Uncomment this for logging only (no actual email sending)
+  /*
   return {
     sendMail: async (options) => {
       console.log("Email sent:");
@@ -28,6 +28,7 @@ function getEmailTransporter() {
       return { messageId: "dev-mode" };
     },
   };
+  */
 }
 
 /**
@@ -92,7 +93,7 @@ export async function sendPasswordResetEmail(to, name, resetUrl) {
  * @param {string} verificationUrl - Email verification URL
  * @returns {Promise} Promise resolving to the sent message info
  */
-export async function sendVerificationEmail(to, token, name) {
+export async function sendVerificationEmail(to, token, name, isEmailChange = false) {
   // Construct the verification URL with absolute URL in production or relative in development
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? process.env.NEXTAUTH_URL || 'https://nichat-self.vercel.app'
@@ -100,11 +101,27 @@ export async function sendVerificationEmail(to, token, name) {
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   const transporter = getEmailTransporter();
 
-  const mailOptions = {
-    from: `"nichat" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
-    to,
-    subject: "Verify Your Email Address",
-    text: `
+  const subject = isEmailChange 
+    ? "Verify Your New Email Address" 
+    : "Verify Your Email Address";
+  
+  const textContent = isEmailChange
+    ? `
+      Hello ${name},
+      
+      You have requested to change your email address for your NiChat account.
+      
+      Please click the link below to verify your new email address:
+      ${verificationUrl}
+      
+      This link will expire in 24 hours.
+      
+      If you did not request this change, please ignore this email or contact support.
+      
+      Best regards,
+      The NiChat Team
+    `
+    : `
       Hello ${name},
       
       Thank you for registering with NiChat!
@@ -116,8 +133,31 @@ export async function sendVerificationEmail(to, token, name) {
       
       Best regards,
       The NiChat Team
-    `,
-    html: `
+    `;
+  
+  const htmlContent = isEmailChange
+    ? `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #34B7F1; padding: 20px; text-align: center; color: white;">
+          <h1>Verify Your New Email Address</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
+          <p>Hello ${name},</p>
+          <p>You have requested to change your email address for your NiChat account.</p>
+          <p>Please click the button below to verify your new email address:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background-color: #34B7F1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Verify New Email</a>
+          </div>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you did not request this change, please ignore this email or contact support.</p>
+          <p>Best regards,<br>The NiChat Team</p>
+        </div>
+        <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} NiChat. All rights reserved.</p>
+        </div>
+      </div>
+    `
+    : `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background-color: #34B7F1; padding: 20px; text-align: center; color: white;">
           <h1>Verify Your Email Address</h1>
@@ -136,7 +176,117 @@ export async function sendVerificationEmail(to, token, name) {
           <p>© ${new Date().getFullYear()} NiChat. All rights reserved.</p>
         </div>
       </div>
-    `,
+    `;
+
+  const mailOptions = {
+    from: `"nichat" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
+    to,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+/**
+ * Send an OTP verification email
+ * @param {string} to - Recipient email address
+ * @param {string} otp - The OTP code
+ * @param {string} name - Recipient name
+ * @param {boolean} isEmailChange - Whether this is for email change verification
+ * @returns {Promise} Promise resolving to the sent message info
+ */
+export async function sendOTPEmail(to, otp, name, isEmailChange = false) {
+  const transporter = getEmailTransporter();
+
+  const subject = isEmailChange 
+    ? "Verify Your New Email Address" 
+    : "Verify Your Email Address";
+  
+  const textContent = isEmailChange
+    ? `
+      Hello ${name},
+      
+      You have requested to change your email address for your NiChat account.
+      
+      Your verification code is: ${otp}
+      
+      Enter this code on the verification page to complete your email change.
+      
+      This code will expire in 30 minutes.
+      
+      If you did not request this change, please ignore this email or contact support.
+      
+      Best regards,
+      The NiChat Team
+    `
+    : `
+      Hello ${name},
+      
+      Thank you for registering with NiChat!
+      
+      Your verification code is: ${otp}
+      
+      Enter this code on the verification page to complete your registration.
+      
+      This code will expire in 30 minutes.
+      
+      Best regards,
+      The NiChat Team
+    `;
+  
+  const htmlContent = isEmailChange
+    ? `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #34B7F1; padding: 20px; text-align: center; color: white;">
+          <h1>Verify Your New Email Address</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
+          <p>Hello ${name},</p>
+          <p>You have requested to change your email address for your NiChat account.</p>
+          <p>Your verification code is:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background-color: #f5f5f5; padding: 15px; font-size: 24px; letter-spacing: 5px; font-weight: bold; display: inline-block; border-radius: 4px;">${otp}</div>
+          </div>
+          <p>Enter this code on the verification page to complete your email change.</p>
+          <p>This code will expire in 30 minutes.</p>
+          <p>If you did not request this change, please ignore this email or contact support.</p>
+          <p>Best regards,<br>The NiChat Team</p>
+        </div>
+        <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} NiChat. All rights reserved.</p>
+        </div>
+      </div>
+    `
+    : `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #34B7F1; padding: 20px; text-align: center; color: white;">
+          <h1>Verify Your Email Address</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none;">
+          <p>Hello ${name},</p>
+          <p>Thank you for registering with NiChat!</p>
+          <p>Your verification code is:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background-color: #f5f5f5; padding: 15px; font-size: 24px; letter-spacing: 5px; font-weight: bold; display: inline-block; border-radius: 4px;">${otp}</div>
+          </div>
+          <p>Enter this code on the verification page to complete your registration.</p>
+          <p>This code will expire in 30 minutes.</p>
+          <p>Best regards,<br>The NiChat Team</p>
+        </div>
+        <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} NiChat. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+  const mailOptions = {
+    from: `"nichat" <${process.env.EMAIL_FROM || "noreply@chatapp.com"}>`,
+    to,
+    subject,
+    text: textContent,
+    html: htmlContent,
   };
 
   return transporter.sendMail(mailOptions);

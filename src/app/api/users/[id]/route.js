@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 import User from "@/lib/mongodb/models/User";
 import { authOptions } from "../../auth/[...nextauth]/route";
@@ -96,6 +96,7 @@ export async function PATCH(request, { params }) {
     if (updates.name) allowedUpdates.name = updates.name;
     if (updates.avatar) allowedUpdates.avatar = updates.avatar;
     if (updates.status) allowedUpdates.status = updates.status;
+    if (updates.email) allowedUpdates.email = updates.email;
     if (typeof updates.isPrivate === "boolean")
       allowedUpdates.isPrivate = updates.isPrivate;
 

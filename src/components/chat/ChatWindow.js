@@ -338,7 +338,7 @@ const ChatWindow = ({ chatId }) => {
       setIsProcessing(true);
 
       const response = await fetch(getApiUrl(`/api/users/${otherUser._id}`), {
-        method: "PATCH",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -348,13 +348,15 @@ const ChatWindow = ({ chatId }) => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to block user");
+        const data = await response.json();
+        throw new Error(data.error || "Failed to block user");
       }
 
       // Redirect to dashboard after blocking
       router.push("/dashboard");
     } catch (error) {
       console.error("Error blocking user:", error);
+      alert(error.message || "Failed to block user. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -374,22 +376,25 @@ const ChatWindow = ({ chatId }) => {
       setIsProcessing(true);
 
       const response = await fetch(getApiUrl(`/api/users/${otherUser._id}`), {
-        method: "PATCH",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: "unfollow",
+          action: "removeContact",
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to unfollow user");
+        const data = await response.json();
+        throw new Error(data.error || "Failed to unfollow user");
       }
 
-      // Show success message or update UI
+      // Show success message
+      alert("User unfollowed successfully");
     } catch (error) {
       console.error("Error unfollowing user:", error);
+      alert(error.message || "Failed to unfollow user. Please try again.");
     } finally {
       setIsProcessing(false);
     }

@@ -16,6 +16,12 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
     },
+    pendingEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+    },
     password: {
       type: String,
       required: [true, 'Password is required'],
@@ -98,11 +104,25 @@ const UserSchema = new mongoose.Schema(
     verificationTokenExpires: {
       type: Date,
     },
+    verificationOTP: {
+      type: String,
+      select: false, // Don't include by default in queries
+    },
+    verificationOTPExpires: {
+      type: String, // Store as ISO string instead of Date
+      select: false, // Don't include by default in queries
+    },
     resetPasswordToken: {
       type: String,
     },
     resetPasswordExpires: {
       type: Date,
+    },
+    preferences: {
+      chatBackgroundColor: {
+        type: String,
+        default: '#121212',
+      },
     },
   },
   {

@@ -4,7 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import User from "@/lib/mongodb/models/User";
 import connectDB from "@/lib/mongodb";
 
-// Handler for getting contacts
+// Handler for getting blocked users
 export async function GET(request) {
   try {
     // Check authentication
@@ -19,9 +19,9 @@ export async function GET(request) {
     // Connect to database
     await connectDB();
 
-    // Get current user with populated contacts
+    // Get current user with populated blocked users
     const currentUser = await User.findById(session.user.id)
-      .populate('contacts', 'name email avatar');
+      .populate('blockedUsers', 'name email avatar');
     
     if (!currentUser) {
       return NextResponse.json(
@@ -30,14 +30,14 @@ export async function GET(request) {
       );
     }
 
-    // Return contacts
+    // Return blocked users
     return NextResponse.json({
-      contacts: currentUser.contacts || []
+      blockedUsers: currentUser.blockedUsers || []
     });
   } catch (error) {
-    console.error("Error fetching contacts:", error);
+    console.error("Error fetching blocked users:", error);
     return NextResponse.json(
-      { error: "Server error while fetching contacts" },
+      { error: "Server error while fetching blocked users" },
       { status: 500 }
     );
   }

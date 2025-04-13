@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import User from "@/lib/mongodb/models/User";
 import connectDB from "@/lib/mongodb";
+import { verifyVerificationToken } from "@/lib/token";
 
 export async function GET(request) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request) {
 
     // Find user with the token
     const user = await User.findOne({
-      verificationToken: token,
+      verificationToken: { $exists: true },
       verificationTokenExpires: { $gt: new Date() },
     });
 
@@ -31,6 +32,24 @@ export async function GET(request) {
       );
     }
 
+    // Verify the token
+    const isValid = verifyVerificationToken(token, user.verificationToken);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Invalid verification token" },
+        { status: 400 }
+      );
+    }
+
+    // Determine if this is an email change or a new account verification
+    const isEmailChange = !!user.pendingEmail;
+    
+    if (isEmailChange) {
+      // Update user's email with the pending email
+      user.email = user.pendingEmail;
+      user.pendingEmail = undefined;
+    }
+    
     // Update user to verified and remove token
     user.isVerified = true;
     user.verificationToken = undefined;
@@ -43,9 +62,11 @@ export async function GET(request) {
       : '';
     
     // Construct the full redirect URL
-    const redirectUrl = `${baseUrl}/login?verified=true`;
+    const redirectUrl = isEmailChange
+      ? `${baseUrl}/settings?emailChanged=true`
+      : `${baseUrl}/login?verified=true`;
     
-    // Redirect to login page with success message
+    // Redirect to appropriate page with success message
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error("Email verification error:", error);

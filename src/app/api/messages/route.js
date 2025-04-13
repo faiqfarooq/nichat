@@ -52,6 +52,39 @@ export async function POST(request) {
       );
     }
     
+    // Check if the sender is blocked by any of the chat participants
+    const otherParticipants = chat.participants.filter(
+      (participant) => participant.toString() !== session.user.id
+    );
+    
+    // For each participant, check if they have blocked the sender
+    for (const participantId of otherParticipants) {
+      const participant = await User.findById(participantId);
+      
+      // If the participant has blocked the sender, return an error
+      if (participant.blockedUsers && participant.blockedUsers.includes(session.user.id)) {
+        return NextResponse.json(
+          { error: "Cannot send message: you have been blocked by one of the participants" },
+          { status: 403 }
+        );
+      }
+    }
+    
+    // Check if the sender has blocked any of the participants
+    const currentUser = await User.findById(session.user.id);
+    if (currentUser.blockedUsers && currentUser.blockedUsers.length > 0) {
+      const hasBlockedParticipant = otherParticipants.some(participantId => 
+        currentUser.blockedUsers.includes(participantId.toString())
+      );
+      
+      if (hasBlockedParticipant) {
+        return NextResponse.json(
+          { error: "Cannot send message: you have blocked one of the participants" },
+          { status: 403 }
+        );
+      }
+    }
+    
     // Create the message
     const message = await Message.create({
       chat: chatId,
@@ -137,6 +170,39 @@ export async function GET(request) {
         { error: "You are not a participant in this chat" },
         { status: 403 }
       );
+    }
+    
+    // Check if the user is blocked by any of the chat participants
+    const otherParticipants = chat.participants.filter(
+      (participant) => participant.toString() !== session.user.id
+    );
+    
+    // For each participant, check if they have blocked the user
+    for (const participantId of otherParticipants) {
+      const participant = await User.findById(participantId);
+      
+      // If the participant has blocked the user, return an error
+      if (participant.blockedUsers && participant.blockedUsers.includes(session.user.id)) {
+        return NextResponse.json(
+          { error: "Cannot access chat: you have been blocked by one of the participants" },
+          { status: 403 }
+        );
+      }
+    }
+    
+    // Check if the user has blocked any of the participants
+    const currentUser = await User.findById(session.user.id);
+    if (currentUser.blockedUsers && currentUser.blockedUsers.length > 0) {
+      const hasBlockedParticipant = otherParticipants.some(participantId => 
+        currentUser.blockedUsers.includes(participantId.toString())
+      );
+      
+      if (hasBlockedParticipant) {
+        return NextResponse.json(
+          { error: "Cannot access chat: you have blocked one of the participants" },
+          { status: 403 }
+        );
+      }
     }
 
     // Build query
