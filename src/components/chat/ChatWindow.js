@@ -35,6 +35,7 @@ const ChatWindow = ({ chatId }) => {
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [chatBackgroundColor, setChatBackgroundColor] = useState("#121212");
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -275,12 +276,29 @@ const ChatWindow = ({ chatId }) => {
     );
   };
 
-  // Initialize chat and messages
+  // Fetch user preferences
+  const fetchUserPreferences = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/users/preferences'));
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.preferences?.chatBackgroundColor) {
+          setChatBackgroundColor(data.preferences.chatBackgroundColor);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user preferences:", error);
+    }
+  };
+
+  // Initialize chat, messages, and preferences
   useEffect(() => {
     if (chatId && session) {
       setInitialLoad(true);
       fetchChat();
       fetchMessages();
+      fetchUserPreferences();
     }
 
     return () => {
@@ -812,7 +830,8 @@ const ChatWindow = ({ chatId }) => {
       {/* Messages container */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-[url('https://i.imgur.com/vRfXi7q.png')] bg-opacity-5 bg-repeat"
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+        style={{ backgroundColor: chatBackgroundColor }}
         onScroll={handleScroll}
       >
         {loadingMore && (
