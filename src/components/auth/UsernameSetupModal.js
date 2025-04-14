@@ -11,6 +11,7 @@ export default function UsernameSetupModal() {
   
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -89,20 +90,27 @@ export default function UsernameSetupModal() {
         throw new Error(data.error || 'Failed to set username');
       }
       
+      // Show success message
+      setSuccess('Username set successfully! Redirecting...');
+      
       // Update the session to remove the needsUsername flag
       await update({
         ...session,
         user: {
           ...session.user,
           needsUsername: false,
+          username: username,
         },
       });
       
-      // Close the modal
-      setIsVisible(false);
-      
-      // Refresh the page to update the UI
-      router.refresh();
+      // Add a slight delay before closing the modal and refreshing the page
+      setTimeout(() => {
+        // Close the modal
+        setIsVisible(false);
+        
+        // Refresh the page to update the UI
+        router.refresh();
+      }, 1500); // 1.5 second delay
     } catch (error) {
       setError(error.message);
     } finally {
@@ -148,6 +156,7 @@ export default function UsernameSetupModal() {
           onClick={handleCloseClick}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
           aria-label="Close"
+          disabled={loading || success}
         >
           <svg
             className="w-6 h-6"
@@ -176,6 +185,16 @@ export default function UsernameSetupModal() {
           </div>
         )}
         
+        {success && (
+          <div className="mb-4 p-3 bg-green-500/20 border border-green-500 rounded text-green-200 text-sm flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {success}
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">
@@ -189,7 +208,7 @@ export default function UsernameSetupModal() {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-2 bg-dark rounded border border-gray-700 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-white"
               placeholder="Choose a unique username"
-              disabled={loading}
+              disabled={loading || success !== ''}
             />
             <p className="mt-1 text-xs text-gray-400">
               Only letters, numbers, and underscores. 3-20 characters.
@@ -198,10 +217,10 @@ export default function UsernameSetupModal() {
           
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || success !== ''}
             className="w-full py-2 px-4 bg-primary hover:bg-primary-dark text-dark font-semibold rounded transition duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {loading ? 'Setting Username...' : 'Continue'}
+            {loading ? 'Setting Username...' : success ? 'Username Set!' : 'Continue'}
           </button>
         </form>
       </div>
