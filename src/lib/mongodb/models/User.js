@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -9,10 +8,26 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'Name is required'],
       trim: true,
     },
+    username: {
+      type: String,
+      required: [true, 'Username is required'],
+      unique: true,
+      trim: true,
+      lowercase: true,
+      match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'],
+      minlength: [3, 'Username must be at least 3 characters'],
+      maxlength: [20, 'Username cannot be more than 20 characters'],
+    },
     email: {
       type: String,
       required: [true, 'Email is required'],
       unique: true,
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+    },
+    pendingEmail: {
+      type: String,
       trim: true,
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
@@ -25,7 +40,6 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: '/assets/images/default-avatar.png',
     },
     status: {
       type: String,
@@ -46,6 +60,40 @@ const UserSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    pendingRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    notifications: [
+      {
+        type: {
+          type: String,
+          enum: ['follow', 'request', 'accept', 'message'],
+          required: true
+        },
+        from: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        read: {
+          type: Boolean,
+          default: false
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
     isPrivate: {
       type: Boolean,
       default: false,
@@ -60,17 +108,35 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    needsUsername: {
+      type: Boolean,
+      default: false,
+    },
     verificationToken: {
       type: String,
     },
     verificationTokenExpires: {
       type: Date,
     },
+    verificationOTP: {
+      type: String,
+      select: false, // Don't include by default in queries
+    },
+    verificationOTPExpires: {
+      type: String, // Store as ISO string instead of Date
+      select: false, // Don't include by default in queries
+    },
     resetPasswordToken: {
       type: String,
     },
     resetPasswordExpires: {
       type: Date,
+    },
+    preferences: {
+      chatBackgroundColor: {
+        type: String,
+        default: '#121212',
+      },
     },
   },
   {

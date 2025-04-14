@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import FooterMain from "@/components/layout/FooterMain";
-import EnhancedNavbar from "@/components/layout/EnhancedNavbar";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -61,9 +59,6 @@ export default function Pricing() {
 
   return (
     <main className="min-h-screen flex flex-col bg-dark">
-      {/* Header */}
-      <EnhancedNavbar />
-
       {/* Hero Section */}
       <section className="py-16 mt-8 px-4 relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
@@ -407,9 +402,6 @@ export default function Pricing() {
           </div>
         </motion.div>
       </section>
-
-      {/* Footer */}
-      <FooterMain />
     </main>
   );
 }

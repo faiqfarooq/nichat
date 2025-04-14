@@ -1,12 +1,14 @@
-import './globals.css'
-import AuthProvider from '@/providers/AuthProvider';
-import SocketProvider from '@/providers/SocketProvider';
-import { CloudinaryProvider } from '@/providers/CloudinaryProvider';
-import ReduxProvider from '@/providers/ReduxProvider';
+import "./globals.css";
+import AuthProvider from "@/providers/AuthProvider";
+import SocketProvider from "@/providers/SocketProvider";
+import { CloudinaryProvider } from "@/providers/CloudinaryProvider";
+import ReduxProvider from "@/providers/ReduxProvider";
+import CallNotificationProvider from "@/providers/CallNotificationProvider";
+import MainLayout from "@/components/layout/MainLayout";
 
 export const metadata = {
-  title: 'Chat App',
-  description: 'A modern messaging application',
+  title: "Chat App",
+  description: "A modern messaging application",
 };
 
 export default function RootLayout({ children }) {
@@ -17,7 +19,11 @@ export default function RootLayout({ children }) {
           <ReduxProvider>
             <SocketProvider>
               <CloudinaryProvider>
-                {children}
+                <CallNotificationProvider>
+                  <MainLayout>
+                    {children}
+                  </MainLayout>
+                </CallNotificationProvider>
               </CloudinaryProvider>
             </SocketProvider>
           </ReduxProvider>

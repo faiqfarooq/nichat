@@ -69,6 +69,40 @@ export async function POST(request) {
         );
       }
       
+      // Get current user
+      const currentUser = await User.findById(session.user.id);
+      if (!currentUser) {
+        return NextResponse.json(
+          { error: "Current user not found" },
+          { status: 404 }
+        );
+      }
+      
+      // Check if either user has blocked the other
+      if (user.blockedUsers && user.blockedUsers.includes(session.user.id)) {
+        return NextResponse.json(
+          { error: "Cannot create chat: you have been blocked by this user" },
+          { status: 403 }
+        );
+      }
+      
+      if (currentUser.blockedUsers && currentUser.blockedUsers.includes(userId)) {
+        return NextResponse.json(
+          { error: "Cannot create chat: you have blocked this user" },
+          { status: 403 }
+        );
+      }
+      
+      // Check if user is private and not in current user's contacts
+      if (user.isPrivate) {
+        if (!currentUser.contacts.includes(userId)) {
+          return NextResponse.json(
+            { error: "Cannot message a private user unless they accept your request" },
+            { status: 403 }
+          );
+        }
+      }
+      
       // Check if chat already exists
       const existingChat = await Chat.findOne({
         isGroup: false,
@@ -118,14 +152,53 @@ export async function GET(request) {
     // Connect to database
     await connectDB();
 
+    // Get current user with blocked users
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Get all chats where user is a participant
-    const chats = await Chat.find({
+    let chats = await Chat.find({
       participants: session.user.id,
     })
       .sort({ updatedAt: -1 })
-      .populate("participants", "name avatar status isOnline")
+      .populate("participants", "name avatar status isOnline blockedUsers")
       .populate("groupAdmin", "name avatar")
       .populate("lastMessage");
+
+    // Filter out one-on-one chats with blocked users or users who have blocked the current user
+    chats = chats.filter(chat => {
+      // Keep all group chats
+      if (chat.isGroup) return true;
+      
+      // For one-on-one chats, check if either user has blocked the other
+      const otherParticipant = chat.participants.find(
+        p => p._id.toString() !== session.user.id
+      );
+      
+      if (!otherParticipant) return true; // Keep chat if no other participant (shouldn't happen)
+      
+      // Check if current user has blocked the other participant
+      const currentUserHasBlocked = currentUser.blockedUsers && 
+        currentUser.blockedUsers.includes(otherParticipant._id.toString());
+      
+      // Check if other participant has blocked the current user
+      const otherUserHasBlocked = otherParticipant.blockedUsers && 
+        otherParticipant.blockedUsers.includes(session.user.id);
+      
+      // Keep chat only if neither user has blocked the other
+      return !currentUserHasBlocked && !otherUserHasBlocked;
+    });
+
+    // Remove blockedUsers field from participants for security
+    chats.forEach(chat => {
+      chat.participants.forEach(participant => {
+        if (participant.blockedUsers) {
+          delete participant.blockedUsers;
+        }
+      });
+    });
 
     return NextResponse.json(chats);
   } catch (error) {

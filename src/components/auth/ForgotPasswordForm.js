@@ -39,7 +39,8 @@ export default function ForgotPasswordForm() {
         throw new Error(data.error || 'Something went wrong');
       }
       
-      setSuccess(true);
+      // Redirect to OTP verification page
+      router.push(`/verify-email-otp?email=${encodeURIComponent(email)}&reset=true`);
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Failed to send password reset email');
@@ -73,25 +74,7 @@ export default function ForgotPasswordForm() {
           </p>
         </div>
         
-        {success ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-green-900/30 border border-green-500 text-green-200 p-4 rounded-md"
-          >
-            <p className="text-center">
-              Password reset link has been sent to your email address. Please check your inbox.
-            </p>
-            <div className="mt-6 flex justify-center">
-              <Link
-                href="/login"
-                className="px-4 py-2 bg-primary hover:bg-primary-dark text-dark font-medium rounded-md transition-colors"
-              >
-                Back to Login
-              </Link>
-            </div>
-          </motion.div>
-        ) : (
+        {(
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {error && (
               <motion.div

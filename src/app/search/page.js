@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchBar from '@/components/search/SearchBar';
@@ -17,6 +17,9 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const searchParams = useSearchParams();
+  const suggested = searchParams.get('suggested') === 'true';
 
   // Check if user is authenticated
   useEffect(() => {
@@ -35,12 +38,19 @@ export default function SearchPage() {
       clearTimeout(timer);
     };
   }, []);
+  
+  // Load suggested users if the suggested parameter is true
+  useEffect(() => {
+    if (suggested && isLoaded) {
+      handleSearch('');
+    }
+  }, [suggested, isLoaded]);
 
   // Handle search
   const handleSearch = async (searchQuery) => {
     setQuery(searchQuery);
     
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && !suggested) {
       setResults([]);
       return;
     }
@@ -49,7 +59,11 @@ export default function SearchPage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch(getApiUrl(`/api/users/search?query=${encodeURIComponent(searchQuery)}`));
+      const url = suggested 
+        ? getApiUrl('/api/users/search?suggested=true') 
+        : getApiUrl(`/api/users/search?query=${encodeURIComponent(searchQuery)}`);
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error('Failed to search users');
@@ -77,7 +91,8 @@ export default function SearchPage() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to create chat');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create chat');
       }
       
       const chat = await response.json();
@@ -86,7 +101,7 @@ export default function SearchPage() {
       router.push(`/chat/${chat._id}`);
     } catch (error) {
       console.error('Error creating chat:', error);
-      setError('Failed to start chat');
+      setError(error.message || 'Failed to start chat');
     }
   };
 

@@ -3,8 +3,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import EnhancedNavbar from "@/components/layout/EnhancedNavbar";
-import FooterMain from "@/components/layout/FooterMain";
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
@@ -40,7 +38,6 @@ export default function ContactUs() {
 
   return (
     <main className="min-h-screen bg-dark text-white">
-      <EnhancedNavbar />
       {/* Hero Section */}
       <section className="py-16 px-4 mt-8 relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
@@ -477,8 +474,6 @@ export default function ContactUs() {
         </div>
       </section>
 
-      {/* Footer */}
-      <FooterMain />
     </main>
   );
 }

@@ -40,17 +40,22 @@ export const SocketProvider = ({ children }) => {
         console.error('Socket.IO server error:', error);
       });
 
+    console.log('Initializing socket connection with user ID:', session.user.id);
+    
     // Connect to the Socket.IO server
     const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin, {
       auth: {
         token: session.user.id, // Use user ID as authentication
       },
       path: '/api/socket',
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     // Set up event listeners
     socketInstance.on('connect', () => {
-      console.log('Socket connected');
+      console.log('Socket connected with ID:', socketInstance.id);
       setIsConnected(true);
     });
 
@@ -61,6 +66,11 @@ export const SocketProvider = ({ children }) => {
 
     socketInstance.on('error', (error) => {
       console.error('Socket error:', error);
+    });
+    
+    // Debug event listeners
+    socketInstance.onAny((event, ...args) => {
+      console.log(`Socket event received: ${event}`, args);
     });
 
     // Save socket instance

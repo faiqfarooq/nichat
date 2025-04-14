@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import connectDB from "@/lib/mongodb";
 import Chat from "@/lib/mongodb/models/Chat";
 import Message from "@/lib/mongodb/models/Message";
+import User from "@/lib/mongodb/models/User";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
 // Get a specific chat by ID
@@ -20,18 +21,55 @@ export async function GET(request, { params }) {
     // Connect to database
     await connectDB();
 
+    // Get current user with blocked users
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Find the chat and check if user is a participant
     const chat = await Chat.findOne({
       _id: chatId,
       participants: session.user.id,
     })
-      .populate("participants", "name avatar status isOnline lastSeen")
+      .populate("participants", "name avatar status isOnline lastSeen blockedUsers")
       .populate("groupAdmin", "name avatar")
       .populate("lastMessage");
 
     if (!chat) {
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
+
+    // For one-on-one chats, check if either user has blocked the other
+    if (!chat.isGroup) {
+      const otherParticipant = chat.participants.find(
+        p => p._id.toString() !== session.user.id
+      );
+      
+      if (otherParticipant) {
+        // Check if current user has blocked the other participant
+        const currentUserHasBlocked = currentUser.blockedUsers && 
+          currentUser.blockedUsers.includes(otherParticipant._id.toString());
+        
+        // Check if other participant has blocked the current user
+        const otherUserHasBlocked = otherParticipant.blockedUsers && 
+          otherParticipant.blockedUsers.includes(session.user.id);
+        
+        if (currentUserHasBlocked || otherUserHasBlocked) {
+          return NextResponse.json(
+            { error: "Cannot access chat: blocking is active between participants" },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
+    // Remove blockedUsers field from participants for security
+    chat.participants.forEach(participant => {
+      if (participant.blockedUsers) {
+        delete participant.blockedUsers;
+      }
+    });
 
     return NextResponse.json(chat);
   } catch (error) {

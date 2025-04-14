@@ -4,8 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import EnhancedNavbar from "@/components/layout/EnhancedNavbar";
-import FooterMain from "@/components/layout/FooterMain";
 
 export default function Features() {
   const [activeTab, setActiveTab] = useState("messaging");
@@ -23,8 +21,6 @@ export default function Features() {
 
   return (
     <main className="min-h-screen flex flex-col bg-dark">
-      <EnhancedNavbar />
-
       {/* Hero Section */}
       <section className="relative mt-8 py-24 flex flex-col items-center justify-center overflow-hidden">
         <div className="absolute inset-0 -z-10">
@@ -2274,9 +2270,6 @@ export default function Features() {
           </div>
         </motion.div>
       </section>
-
-      {/* Footer */}
-      <FooterMain />
     </main>
   );
 }

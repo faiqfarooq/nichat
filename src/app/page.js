@@ -4,8 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import EnhancedNavbar from "@/components/layout/EnhancedNavbar";
-import FooterMain from "@/components/layout/FooterMain";
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
@@ -49,7 +47,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col bg-dark">
-      <EnhancedNavbar />
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
         {/* Interactive animated background */}
@@ -1323,8 +1320,6 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
-
-      <FooterMain />
     </main>
   );
 }

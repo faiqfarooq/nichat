@@ -81,3 +81,50 @@ export function verifyVerificationToken(token, hashedToken) {
   // Compare with the stored hash
   return hash === hashedToken;
 }
+
+/**
+ * Generate a 6-digit OTP for email verification
+ * @returns {Object} Object containing OTP, hashed OTP, and expiry date
+ */
+export function generateOTP() {
+  // Generate a random 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Hash the OTP for storage
+  const hashedOTP = crypto
+    .createHash('sha256')
+    .update(otp)
+    .digest('hex');
+  
+  // Set expiry to 30 minutes from now
+  const now = new Date();
+  const expires = new Date(now.getTime() + 1800000); // 30 minutes
+  
+  console.log("Generated OTP:", otp);
+  console.log("OTP Expiry:", expires);
+  console.log("Current time:", now);
+  console.log("OTP Expiry ISO:", expires.toISOString());
+  
+  return {
+    otp,
+    hashedOTP,
+    expires,
+  };
+}
+
+/**
+ * Verify an OTP
+ * @param {string} otp - The OTP to verify
+ * @param {string} hashedOTP - The hashed OTP from the database
+ * @returns {boolean} Whether the OTP is valid
+ */
+export function verifyOTP(otp, hashedOTP) {
+  // Hash the provided OTP
+  const hash = crypto
+    .createHash('sha256')
+    .update(otp)
+    .digest('hex');
+  
+  // Compare with the stored hash
+  return hash === hashedOTP;
+}
