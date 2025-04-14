@@ -4,10 +4,16 @@
  * @returns {string} The base URL for API requests
  */
 export function getApiBaseUrl() {
-  // In production, use NEXTAUTH_URL as the base
-  // In development, use relative URLs (empty string)
+  // In browser environment
+  if (typeof window !== 'undefined') {
+    // Use the current origin (hostname) for API requests
+    // This ensures requests are made to the same domain, avoiding CORS issues
+    return window.location.origin;
+  }
+  
+  // In server environment
   return process.env.NODE_ENV === 'production' 
-    ? process.env.NEXTAUTH_URL || 'https://nichat-self.vercel.app'
+    ? process.env.NEXTAUTH_URL || 'https://nichat.ninjacodex.co'
     : '';
 }
 

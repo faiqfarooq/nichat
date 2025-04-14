@@ -5,6 +5,7 @@ import Message from "@/lib/mongodb/models/Message";
 import Chat from "@/lib/mongodb/models/Chat";
 import User from "@/lib/mongodb/models/User";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { corsMiddleware } from "@/lib/corsMiddleware";
 
 export async function POST(request) {
   try {
@@ -12,7 +13,8 @@ export async function POST(request) {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return corsMiddleware(request, response);
     }
 
     // Parse request body
@@ -29,10 +31,11 @@ export async function POST(request) {
     } = requestBody;
 
     if (!chatId || !content) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Chat ID and content are required" },
         { status: 400 }
       );
+      return corsMiddleware(request, response);
     }
 
     // Connect to database
@@ -42,14 +45,16 @@ export async function POST(request) {
     const chat = await Chat.findById(chatId);
 
     if (!chat) {
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      const response = NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      return corsMiddleware(request, response);
     }
 
     if (!chat.participants.includes(session.user.id)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "You are not a participant in this chat" },
         { status: 403 }
       );
+      return corsMiddleware(request, response);
     }
     
     // Check if the sender is blocked by any of the chat participants
@@ -63,10 +68,11 @@ export async function POST(request) {
       
       // If the participant has blocked the sender, return an error
       if (participant.blockedUsers && participant.blockedUsers.includes(session.user.id)) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Cannot send message: you have been blocked by one of the participants" },
           { status: 403 }
         );
+        return corsMiddleware(request, response);
       }
     }
     
@@ -78,10 +84,11 @@ export async function POST(request) {
       );
       
       if (hasBlockedParticipant) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Cannot send message: you have blocked one of the participants" },
           { status: 403 }
         );
+        return corsMiddleware(request, response);
       }
     }
     
@@ -122,13 +129,16 @@ export async function POST(request) {
       .populate("sender", "name avatar")
       .populate("replyTo");
 
-    return NextResponse.json(populatedMessage, { status: 201 });
+    // Create response with CORS headers
+    const response = NextResponse.json(populatedMessage, { status: 201 });
+    return corsMiddleware(request, response);
   } catch (error) {
     console.error("Message creation error:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: "Server error during message creation" },
       { status: 500 }
     );
+    return corsMiddleware(request, response);
   }
 }
 
@@ -139,7 +149,8 @@ export async function GET(request) {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return corsMiddleware(request, response);
     }
 
     // Get query parameters
@@ -149,10 +160,11 @@ export async function GET(request) {
     const before = searchParams.get("before"); // Message ID to fetch messages before
 
     if (!chatId) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Chat ID is required" },
         { status: 400 }
       );
+      return corsMiddleware(request, response);
     }
 
     // Connect to database
@@ -162,14 +174,16 @@ export async function GET(request) {
     const chat = await Chat.findById(chatId);
 
     if (!chat) {
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      const response = NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      return corsMiddleware(request, response);
     }
 
     if (!chat.participants.includes(session.user.id)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "You are not a participant in this chat" },
         { status: 403 }
       );
+      return corsMiddleware(request, response);
     }
     
     // Check if the user is blocked by any of the chat participants
@@ -183,10 +197,11 @@ export async function GET(request) {
       
       // If the participant has blocked the user, return an error
       if (participant.blockedUsers && participant.blockedUsers.includes(session.user.id)) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Cannot access chat: you have been blocked by one of the participants" },
           { status: 403 }
         );
+        return corsMiddleware(request, response);
       }
     }
     
@@ -198,10 +213,11 @@ export async function GET(request) {
       );
       
       if (hasBlockedParticipant) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Cannot access chat: you have blocked one of the participants" },
           { status: 403 }
         );
+        return corsMiddleware(request, response);
       }
     }
 
@@ -256,12 +272,15 @@ export async function GET(request) {
 
     await Chat.findByIdAndUpdate(chatId, { $set: unreadUpdate }, { new: true });
 
-    return NextResponse.json(messages.reverse()); // Reverse to get oldest first
+    // Create response with CORS headers
+    const response = NextResponse.json(messages.reverse()); // Reverse to get oldest first
+    return corsMiddleware(request, response);
   } catch (error) {
     console.error("Error fetching messages:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: "Server error while fetching messages" },
       { status: 500 }
     );
+    return corsMiddleware(request, response);
   }
 }
