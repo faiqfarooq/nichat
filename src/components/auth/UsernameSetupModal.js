@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/apiUtils';
 
@@ -13,6 +13,7 @@ export default function UsernameSetupModal() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   useEffect(() => {
     // Check if the user needs to set a username
@@ -20,6 +21,31 @@ export default function UsernameSetupModal() {
       setIsVisible(true);
     }
   }, [session]);
+  
+  // Handle close button click
+  const handleCloseClick = () => {
+    // If username is required, show confirmation dialog
+    if (session?.user?.needsUsername) {
+      setShowConfirmation(true);
+    } else {
+      // If username is not required, just close the modal
+      setIsVisible(false);
+    }
+  };
+  
+  // Handle confirmation dialog close
+  const handleConfirmClose = async () => {
+    setShowConfirmation(false);
+    setIsVisible(false);
+    
+    // Sign out the user and redirect to login page
+    await signOut({ callbackUrl: '/login' });
+  };
+  
+  // Handle confirmation dialog cancel
+  const handleCancelClose = () => {
+    setShowConfirmation(false);
+  };
   
   const validateUsername = () => {
     // Username must be 3-20 characters and only contain letters, numbers, and underscores
@@ -90,8 +116,56 @@ export default function UsernameSetupModal() {
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-      <div className="w-full max-w-md p-6 bg-dark-lighter rounded-lg shadow-xl">
-        <h2 className="text-2xl font-bold text-white mb-4">Set Your Username</h2>
+      {/* Confirmation Dialog */}
+      {showConfirmation && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="w-full max-w-md p-6 bg-dark-lighter rounded-lg shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-4">Are you sure?</h3>
+            <p className="text-gray-300 mb-6">
+              Setting a username is required to use NiChat. If you close this dialog, you will be signed out.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={handleCancelClose}
+                className="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmClose}
+                className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors"
+              >
+                Close & Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="w-full max-w-md p-6 bg-dark-lighter rounded-lg shadow-xl relative">
+        {/* Close button */}
+        <button
+          onClick={handleCloseClick}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+          aria-label="Close"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        
+        <h2 className="text-2xl font-bold text-white mb-4 pr-8">Set Your Username</h2>
         <p className="text-gray-300 mb-6">
           Welcome to NiChat! Please choose a unique username to continue.
         </p>
