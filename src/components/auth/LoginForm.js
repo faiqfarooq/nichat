@@ -70,7 +70,13 @@ const LoginForm = () => {
 
       // If successful, redirect manually
       setSuccess('Login successful! Redirecting...');
-      router.push('/chat');
+      
+      // Check for callbackUrl in the URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get('callbackUrl');
+      
+      // Redirect to callbackUrl if it exists, otherwise to chat
+      router.push(callbackUrl || '/chat');
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -216,10 +222,16 @@ const LoginForm = () => {
         
         <div className="mt-6">
           <button
-            onClick={() => signIn('google', { 
-              callbackUrl: '/chat',
-              redirect: true // Force a server-side redirect
-            })}
+            onClick={() => {
+              // Check for callbackUrl in the URL
+              const searchParams = new URLSearchParams(window.location.search);
+              const callbackUrl = searchParams.get('callbackUrl');
+              
+              signIn('google', { 
+                callbackUrl: callbackUrl || '/chat',
+                redirect: true // Force a server-side redirect
+              });
+            }}
             disabled={loading}
             className="w-full flex items-center justify-center py-2 px-4 bg-white hover:bg-gray-100 text-gray-800 font-medium rounded transition duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
           >
