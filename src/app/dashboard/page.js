@@ -219,12 +219,13 @@ export default function Dashboard() {
             </div>
 
             <div className="bg-dark-lighter rounded-xl border border-gray-800 overflow-hidden">
-              {recentChats.map((chat, index) => (
+              {/* Show only the latest 3 chats */}
+              {recentChats.slice(0, 3).map((chat, index) => (
                 <Link
                   key={chat.id}
                   href={`/chat/${chat.id}`}
                   className={`flex items-center p-4 hover:bg-dark-light transition-colors ${
-                    index !== recentChats.length - 1
+                    index !== Math.min(recentChats.length, 3) - 1
                       ? "border-b border-gray-800"
                       : ""
                   }`}
