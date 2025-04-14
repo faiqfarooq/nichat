@@ -13,7 +13,7 @@ import { getApiBaseUrl } from "@/lib/apiUtils";
 // Determine the base URL for NextAuth
 const baseUrl =
   process.env.NODE_ENV === "production"
-    ? process.env.NEXTAUTH_URL || "https://nichat-self.vercel.app"
+    ? process.env.NEXTAUTH_URL || "https://https://nichat.ninjacodex.co"
     : process.env.NEXTAUTH_URL;
 
 export const authOptions = {
@@ -34,11 +34,16 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.log("Authorize function called with credentials:", credentials ? JSON.stringify({
-          email: credentials.email,
-          password: "***REDACTED***"
-        }) : "no credentials");
-        
+        console.log(
+          "Authorize function called with credentials:",
+          credentials
+            ? JSON.stringify({
+                email: credentials.email,
+                password: "***REDACTED***",
+              })
+            : "no credentials"
+        );
+
         if (!credentials?.email || !credentials?.password) {
           console.log("Missing required credentials");
           throw new Error("Email and password are required");
@@ -51,22 +56,28 @@ export const authOptions = {
           // Log all users in the database for debugging
           const allUsers = await User.find({});
           console.log(`Total users in database: ${allUsers.length}`);
-          console.log(`All user emails: ${allUsers.map(u => u.email).join(', ')}`);
-          
+          console.log(
+            `All user emails: ${allUsers.map((u) => u.email).join(", ")}`
+          );
+
           // Find user by email - use case-insensitive search
-          const user = await User.findOne({ 
-            email: { $regex: new RegExp(`^${credentials.email}$`, 'i') } 
+          const user = await User.findOne({
+            email: { $regex: new RegExp(`^${credentials.email}$`, "i") },
           }).select("+password");
 
-          console.log(`User found: ${user ? 'yes' : 'no'}`);
-          
+          console.log(`User found: ${user ? "yes" : "no"}`);
+
           if (!user) {
             console.log(`No user found with email: ${credentials.email}`);
-            
+
             // Try finding with exact match as fallback
-            const exactUser = await User.findOne({ email: credentials.email }).select("+password");
-            console.log(`User found with exact match: ${exactUser ? 'yes' : 'no'}`);
-            
+            const exactUser = await User.findOne({
+              email: credentials.email,
+            }).select("+password");
+            console.log(
+              `User found with exact match: ${exactUser ? "yes" : "no"}`
+            );
+
             if (!exactUser) {
               throw new Error("Invalid email or password");
             } else {
@@ -87,8 +98,8 @@ export const authOptions = {
             credentials.password,
             user.password
           );
-          
-          console.log(`Password match: ${isPasswordMatch ? 'yes' : 'no'}`);
+
+          console.log(`Password match: ${isPasswordMatch ? "yes" : "no"}`);
 
           if (!isPasswordMatch) {
             console.log("Password does not match");
@@ -96,14 +107,14 @@ export const authOptions = {
           }
 
           // Check if user is verified
-          console.log(`User verified: ${user.isVerified ? 'yes' : 'no'}`);
-          
+          console.log(`User verified: ${user.isVerified ? "yes" : "no"}`);
+
           if (!user.isVerified) {
             console.log(`User ${user._id} is not verified`);
-            
+
             // Set email for resend verification
             const emailToResend = user.email;
-            
+
             throw new Error(
               "Please verify your email before logging in. Check your inbox for the verification link."
             );
@@ -135,14 +146,23 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log("JWT callback called with user:", user ? JSON.stringify(user) : "no user");
-      console.log("JWT callback called with account:", account ? JSON.stringify(account) : "no account");
-      console.log("JWT callback called with token:", token ? JSON.stringify(token) : "no token");
-      
+      console.log(
+        "JWT callback called with user:",
+        user ? JSON.stringify(user) : "no user"
+      );
+      console.log(
+        "JWT callback called with account:",
+        account ? JSON.stringify(account) : "no account"
+      );
+      console.log(
+        "JWT callback called with token:",
+        token ? JSON.stringify(token) : "no token"
+      );
+
       if (user) {
         token.id = user.id;
         token.avatar = user.avatar;
-        
+
         // Add username to token if present
         if (user.username) {
           token.username = user.username;
@@ -158,31 +178,31 @@ export const authOptions = {
           token.isVerified = true;
           console.log("Setting isVerified to true for OAuth provider");
         }
-        
+
         // Add needsUsername flag if present
         if (user.needsUsername) {
           token.needsUsername = true;
           console.log("Setting needsUsername to true");
         }
       }
-      
+
       // If we already have a token, check if the user needs to set a username
       if (token.id && !token.needsUsernameChecked) {
         try {
           await connectDB();
           const dbUser = await User.findById(token.id);
-          console.log(`Found user in database: ${dbUser ? 'yes' : 'no'}`);
+          console.log(`Found user in database: ${dbUser ? "yes" : "no"}`);
           if (dbUser) {
             console.log(`User isVerified: ${dbUser.isVerified}`);
             console.log(`User needsUsername: ${dbUser.needsUsername}`);
             console.log(`User username: ${dbUser.username}`);
-            
+
             // Always update the isVerified flag from the database
             token.isVerified = dbUser.isVerified;
-            
+
             // Always update the username from the database
             token.username = dbUser.username;
-            
+
             if (dbUser.needsUsername) {
               token.needsUsername = true;
             }
@@ -192,7 +212,7 @@ export const authOptions = {
           console.error("Error checking if user needs username:", error);
         }
       }
-      
+
       console.log("Final token:", JSON.stringify(token, null, 2));
       return token;
     },
@@ -201,12 +221,12 @@ export const authOptions = {
         session.user.id = token.id;
         session.user.avatar = token.avatar;
         session.user.isVerified = token.isVerified;
-        
+
         // Add username to session if present in token
         if (token.username) {
           session.user.username = token.username;
         }
-        
+
         // Add needsUsername flag to session if present in token
         if (token.needsUsername) {
           session.user.needsUsername = true;
@@ -235,7 +255,7 @@ export const authOptions = {
             isVerified: true, // Google OAuth users are automatically verified
             needsUsername: true, // Flag to indicate username needs to be set
           });
-          
+
           // Add user details to the user object
           user.id = newUser._id.toString();
           user.username = newUser.username;
@@ -244,20 +264,22 @@ export const authOptions = {
           // Check if the user needs to set a username
           if (!existingUser.username) {
             // Update the user to set needsUsername flag
-            await User.findByIdAndUpdate(existingUser._id, { 
+            await User.findByIdAndUpdate(existingUser._id, {
               isOnline: true,
               needsUsername: true,
               // Set a temporary username if none exists
-              username: existingUser.username || `user_${Math.random().toString(36).substring(2, 10)}`
+              username:
+                existingUser.username ||
+                `user_${Math.random().toString(36).substring(2, 10)}`,
             });
-            
+
             // Add the needsUsername flag to the user object
             user.needsUsername = true;
           } else {
             // Just update online status
             await User.findByIdAndUpdate(existingUser._id, { isOnline: true });
           }
-          
+
           // Add user details to the user object
           user.id = existingUser._id.toString();
           user.username = existingUser.username;

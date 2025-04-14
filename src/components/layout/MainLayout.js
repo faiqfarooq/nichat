@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import Sidebar from "./Sidebar";
+import MobileSidebar from "./MobileSidebar";
 import NavbarWrapper from "./NavbarWrapper";
 import FooterWrapper from "./FooterWrapper";
 import UsernameSetupModal from "@/components/auth/UsernameSetupModal";
@@ -60,11 +61,17 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 export default function MainLayout({ children }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   // Set mounted to true after component mounts to prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Handle mobile menu toggle
+  const handleMobileMenuToggle = (isOpen) => {
+    setShowMobileSidebar(isOpen);
+  };
 
   // Hide sidebar on these pages
   const hideSidebar =
@@ -82,7 +89,7 @@ export default function MainLayout({ children }) {
       <div className="flex h-screen">
         {/* Sidebar - conditionally rendered */}
         {mounted && !hideSidebar && (
-          <div className="w-full md:w-1/4">
+          <div className="hidden md:block w-full md:w-1/4">
             <Sidebar />
           </div>
         )}
@@ -90,12 +97,12 @@ export default function MainLayout({ children }) {
         {/* Main Content Area */}
         <div
           className={`w-full ${
-            mounted && !hideSidebar ? "md:w-3/4" : ""
+            mounted && !hideSidebar ? "md:w-3/4 " : ""
           } flex flex-col`}
         >
           {/* Sticky Navbar - fixed the background color */}
           <div className="h-16 sticky top-0 z-10 bg-dark shadow">
-            <NavbarWrapper />
+            <NavbarWrapper onToggleMobileMenu={handleMobileMenuToggle} />
           </div>
 
           {/* Scrollable Content */}
@@ -109,6 +116,14 @@ export default function MainLayout({ children }) {
       </div>
 
       <FooterWrapper />
+
+      {/* Mobile Sidebar */}
+      {mounted && !hideSidebar && (
+        <MobileSidebar
+          isOpen={showMobileSidebar}
+          onClose={() => setShowMobileSidebar(false)}
+        />
+      )}
 
       {/* Username Setup Modal */}
       <UsernameSetupModal />

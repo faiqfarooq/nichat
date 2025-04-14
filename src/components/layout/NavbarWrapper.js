@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import EnhancedNavbar from "./EnhancedNavbar";
 import SecondaryNavbar from "./SecondaryNavbar";
 
-const NavbarWrapper = () => {
+const NavbarWrapper = ({ onToggleMobileMenu }) => {
   const pathname = usePathname();
 
   // Show footer only on landing page, login, register, and forgot-password pages
@@ -18,7 +18,11 @@ const NavbarWrapper = () => {
     pathname === "/verify-email-otp" ||
     pathname === "/forgot-password";
 
-  return showFooter ? <EnhancedNavbar /> : <SecondaryNavbar />;
+  return showFooter ? (
+    <EnhancedNavbar />
+  ) : (
+    <SecondaryNavbar onToggleMobileMenu={onToggleMobileMenu} />
+  );
 };
 
 export default NavbarWrapper;
