@@ -13,7 +13,7 @@ import { getApiBaseUrl } from "@/lib/apiUtils";
 // Determine the base URL for NextAuth
 const baseUrl =
   process.env.NODE_ENV === "production"
-    ? process.env.NEXTAUTH_URL || "https://https://nichat.ninjacodex.co"
+    ? process.env.NEXTAUTH_URL || "https://nichat.ninjacodex.co"
     : process.env.NEXTAUTH_URL;
 
 export const authOptions = {

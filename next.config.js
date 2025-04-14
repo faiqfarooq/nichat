@@ -2,15 +2,19 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ["**"],
+    domains: ["res.cloudinary.com", "i.pravatar.cc", "lh3.googleusercontent.com"],
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**",
+        hostname: "res.cloudinary.com",
       },
       {
         protocol: "https",
-        hostname: "**",
+        hostname: "i.pravatar.cc",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
       },
     ],
   },
