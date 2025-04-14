@@ -7,8 +7,13 @@ import CallNotificationProvider from "@/providers/CallNotificationProvider";
 import MainLayout from "@/components/layout/MainLayout";
 
 export const metadata = {
-  title: "Chat App",
+  title: "nichat | A modern messaging application",
   description: "A modern messaging application",
+  icons: {
+    icon: "/log.png",
+    shortcut: "/log.png",
+    apple: "/log.png",
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -20,9 +25,7 @@ export default function RootLayout({ children }) {
             <SocketProvider>
               <CloudinaryProvider>
                 <CallNotificationProvider>
-                  <MainLayout>
-                    {children}
-                  </MainLayout>
+                  <MainLayout>{children}</MainLayout>
                 </CallNotificationProvider>
               </CloudinaryProvider>
             </SocketProvider>

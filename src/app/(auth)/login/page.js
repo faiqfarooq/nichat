@@ -14,7 +14,9 @@ export default function LoginPage() {
   // Redirect to chat if already authenticated
   useEffect(() => {
     if (status === "authenticated") {
-      router.push("/dashboard");
+      // Get the intended destination from URL or default to chat
+      const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
+      router.push(callbackUrl || "/chat");
     }
   }, [status, router]);
 
