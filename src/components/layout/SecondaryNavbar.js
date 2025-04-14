@@ -1,15 +1,25 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import useUserData from "@/hooks/useUserData";
 import NotificationBar from "./NotificationBar";
 import Avatar from "../ui/Avatar";
 import { usePathname } from "next/navigation";
 
-const SecondaryNavbar = () => {
+const SecondaryNavbar = ({ onToggleMobileMenu }) => {
   const { data: session } = useSession();
   const { user: userData } = useUserData();
   const pathname = usePathname();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  // Handle mobile menu toggle
+  const handleMobileMenuToggle = () => {
+    setShowMobileMenu(!showMobileMenu);
+    if (onToggleMobileMenu) {
+      onToggleMobileMenu(!showMobileMenu);
+    }
+  };
   return (
     <>
       <motion.header
@@ -21,7 +31,7 @@ const SecondaryNavbar = () => {
         <div className="flex items-center">
           <button
             className="md:hidden mr-3 text-gray-400 hover:text-white transition-colors"
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            onClick={handleMobileMenuToggle}
           >
             <svg
               className="w-6 h-6"

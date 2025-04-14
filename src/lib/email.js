@@ -11,7 +11,7 @@ function getEmailTransporter() {
   console.log(`SMTP Port: ${process.env.EMAIL_SERVER_PORT}`);
   console.log(`SMTP User: ${process.env.EMAIL_SERVER_USER}`);
   console.log(`SMTP Secure: ${process.env.EMAIL_SERVER_SECURE}`);
-  
+
   return nodemailer.createTransport({
     host: process.env.EMAIL_SERVER_HOST,
     port: process.env.EMAIL_SERVER_PORT,
@@ -94,7 +94,7 @@ export async function sendVerificationEmail(
   // Construct the verification URL with absolute URL in production or relative in development
   const baseUrl =
     process.env.NODE_ENV === "production"
-      ? process.env.NEXTAUTH_URL || "https://nichat-self.vercel.app"
+      ? process.env.NEXTAUTH_URL || "https://https://nichat.ninjacodex.co"
       : "";
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   const transporter = getEmailTransporter();
@@ -310,12 +310,14 @@ export async function sendVerificationEmailWithOTP(
   name,
   isPasswordReset = false
 ) {
-  console.log(`Sending verification email with OTP to ${to} (${name}), isPasswordReset: ${isPasswordReset}`);
-  
+  console.log(
+    `Sending verification email with OTP to ${to} (${name}), isPasswordReset: ${isPasswordReset}`
+  );
+
   try {
     const otp = generateOTP();
     console.log(`Generated OTP: ${otp}`);
-    
+
     const transporter = getEmailTransporter();
     console.log("Email transporter created");
 
@@ -408,17 +410,17 @@ export async function sendVerificationEmailWithOTP(
       text: textContent,
       html: htmlContent,
     };
-    
+
     console.log("Mail options prepared:", {
       from: mailOptions.from,
       to: mailOptions.to,
-      subject: mailOptions.subject
+      subject: mailOptions.subject,
     });
 
     console.log("Sending email...");
     const info = await transporter.sendMail(mailOptions);
     console.log("Email sent successfully:", info.messageId);
-    
+
     return { otp, info };
   } catch (error) {
     console.error("Error sending verification email:", error);

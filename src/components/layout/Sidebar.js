@@ -96,7 +96,7 @@ const Sidebar = () => {
       initial={{ x: -100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full md:w-1/4  bg-dark-lighter border-r border-gray-700 h-screen fixed left-0 pb-4 flex flex-col"
+      className="w-full md:w-1/4 bg-dark-lighter border-r border-gray-700 h-screen fixed left-0 pb-4 flex flex-col hidden md:flex"
     >
       {/* User Profile Section */}
       <div className="px-4 mt-4 mb-6">
