@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/lib/mongodb/models/User";
+import OtpVerification from "@/lib/mongodb/models/OtpVerification";
 import bcrypt from "bcryptjs";
-import { verifyResetToken } from "@/lib/token";
 
 export async function POST(request) {
   try {
-    const { token, password } = await request.json();
+    const { userId, password } = await request.json();
 
-    if (!token || !password) {
+    if (!userId || !password) {
       return NextResponse.json(
-        { error: "Token and password are required" },
+        { error: "User ID and password are required" },
         { status: 400 }
       );
     }
@@ -18,15 +18,25 @@ export async function POST(request) {
     // Connect to database
     await connectDB();
 
-    // Find user with this reset token
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
-    });
+    // Find user by ID
+    const user = await User.findById(userId);
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has a verified OTP
+    const verification = await OtpVerification.findOne({ 
+      userId: user._id,
+      pendingEmail: user.email
+    });
+
+    if (!verification) {
+      return NextResponse.json(
+        { error: "Please verify your email first" },
         { status: 400 }
       );
     }
@@ -35,11 +45,12 @@ export async function POST(request) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Update user's password and clear reset token fields
+    // Update user's password
     user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
     await user.save();
+
+    // Delete the verification document
+    await OtpVerification.deleteOne({ _id: verification._id });
 
     return NextResponse.json(
       { message: "Password has been reset successfully" },

@@ -38,7 +38,7 @@ export async function GET(request) {
           },
         ],
       })
-        .select("_id name email avatar status isOnline lastSeen isPrivate")
+        .select("_id name username email avatar status isOnline lastSeen isPrivate")
         .limit(10); // Limit to 10 suggested users
 
       return NextResponse.json(suggestedUsers);
@@ -53,13 +53,14 @@ export async function GET(request) {
     }
 
 
-    // Search users by name or email
+    // Search users by name, username, or email
     // Exclude current user and users who have blocked the current user
     const users = await User.find({
       $and: [
         {
           $or: [
             { name: { $regex: query, $options: "i" } },
+            { username: { $regex: query, $options: "i" } },
             { email: { $regex: query, $options: "i" } },
           ],
         },
@@ -73,7 +74,7 @@ export async function GET(request) {
           ],
         },
       ],
-    }).select("_id name email avatar status isOnline lastSeen isPrivate");
+    }).select("_id name username email avatar status isOnline lastSeen isPrivate");
 
     return NextResponse.json(users);
   } catch (error) {

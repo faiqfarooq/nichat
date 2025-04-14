@@ -31,6 +31,10 @@ export async function middleware(request) {
 
   // If user is not verified, redirect to a verification required page
   if (token.isVerified === false) {
+    // Log token details for debugging
+    console.log("User not verified, redirecting to verification-required page");
+    console.log("Token:", JSON.stringify(token, null, 2));
+    
     const url = new URL("/verification-required", request.url);
     return NextResponse.redirect(url);
   }

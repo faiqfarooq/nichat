@@ -14,6 +14,7 @@ const FooterWrapper = () => {
     pathname === "/contact-us" ||
     pathname === "/features" ||
     pathname === "/pricing" ||
+    pathname === "/verify-email-otp" ||
     pathname === "/forgot-password";
 
   return showFooter ? <FooterMain /> : null;
