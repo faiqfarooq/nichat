@@ -7,7 +7,7 @@ import Sidebar from "./Sidebar";
 import MobileSidebar from "./MobileSidebar";
 import NavbarWrapper from "./NavbarWrapper";
 import FooterWrapper from "./FooterWrapper";
-import UsernameSetupModal from "@/components/auth/UsernameSetupModal";
+
 
 // Error fallback component
 function ErrorFallback({ error, resetErrorBoundary }) {
@@ -126,7 +126,7 @@ export default function MainLayout({ children }) {
       )}
 
       {/* Username Setup Modal */}
-      <UsernameSetupModal />
+      {/* <UsernameSetupModal /> */}
     </ErrorBoundary>
   );
 }
