@@ -126,7 +126,7 @@ export default function MainLayout({ children }) {
       )}
 
       {/* Username Setup Modal */}
-      <UsernameSetupModal />
+      {/* <UsernameSetupModal /> */}
     </ErrorBoundary>
   );
 }
