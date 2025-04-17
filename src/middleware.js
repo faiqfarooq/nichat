@@ -23,7 +23,6 @@ export async function middleware(request) {
   }
   
   console.log(`Protected route detected: ${pathname}`);
-
   // Get the session token with secure options
   console.log(`Middleware: Checking auth for ${pathname}`);
   
