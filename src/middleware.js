@@ -9,7 +9,8 @@ export async function middleware(request) {
     pathname.startsWith("/chat") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/group") ||
-    pathname.startsWith("/search");
+    pathname.startsWith("/search") ||
+    pathname.startsWith("/dashboard");
 
   // Skip middleware for non-protected routes and API routes
   if (!isProtectedRoute || pathname.startsWith("/api")) {
@@ -17,20 +18,36 @@ export async function middleware(request) {
   }
 
   // Get the session token with secure options
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
-  });
+  console.log(`Middleware: Checking auth for ${pathname}`);
+  
+  let token;
+  try {
+    token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === "production",
+    });
+    
+    console.log(`Middleware: Token found: ${!!token}`);
+    if (token) {
+      console.log(`Middleware: Token user: ${token.email}, verified: ${token.isVerified}`);
+    }
 
-  // If no token, redirect to login
-  if (!token) {
+    // If no token, redirect to login
+    if (!token) {
+      console.log(`Middleware: No token found, redirecting to login`);
+      const url = new URL("/login", request.url);
+      return NextResponse.redirect(url);
+    }
+  } catch (error) {
+    console.error(`Middleware: Error getting token:`, error);
+    // If there's an error getting the token, redirect to login
     const url = new URL("/login", request.url);
     return NextResponse.redirect(url);
   }
 
   // If user is not verified, redirect to a verification required page
-  if (token.isVerified === false) {
+  if (token && token.isVerified === false) {
     // Log token details for debugging
     console.log("User not verified, redirecting to verification-required page");
     console.log("Token:", JSON.stringify(token, null, 2));
