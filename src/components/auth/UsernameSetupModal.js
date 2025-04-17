@@ -20,6 +20,7 @@ export default function UsernameSetupModal() {
   // Force redirect to dashboard if username has been set
   useEffect(() => {
     if (usernameSet) {
+      console.log('Username set, closing modal and redirecting');
       // Close the modal
       setIsVisible(false);
       
@@ -32,16 +33,32 @@ export default function UsernameSetupModal() {
   useEffect(() => {
     // If the modal is visible and we're not in the process of setting a username
     if (isVisible && !loading && success === '') {
-      // Set a timeout to force close the modal and redirect after 10 seconds
+      console.log('Setting up force close timer');
+      // Set a timeout to force close the modal and redirect after 5 seconds (reduced from 10)
       const forceCloseTimer = setTimeout(() => {
         console.log('Force closing username modal due to timeout');
         setIsVisible(false);
         window.location.href = '/dashboard';
-      }, 10000); // 10 seconds
+      }, 5000); // 5 seconds (reduced from 10)
       
       return () => clearTimeout(forceCloseTimer);
     }
   }, [isVisible, loading, success]);
+  
+  // Additional safety mechanism - force close after component mount
+  useEffect(() => {
+    // Set a timeout to force check session and close modal if needed
+    const initialCheckTimer = setTimeout(() => {
+      console.log('Initial session check timer fired');
+      if (!session?.user?.needsUsername && isVisible) {
+        console.log('Force closing modal - user does not need username');
+        setIsVisible(false);
+        window.location.href = '/dashboard';
+      }
+    }, 3000); // 3 seconds after mount
+    
+    return () => clearTimeout(initialCheckTimer);
+  }, [session, isVisible]);
   
   useEffect(() => {
     // Debug logging
@@ -54,7 +71,7 @@ export default function UsernameSetupModal() {
     });
     
     // Check if the user needs to set a username
-    if (session?.user?.needsUsername && !usernameSet) {
+    if (session?.user?.needsUsername === true && !usernameSet) {
       console.log('Showing username modal - user needs username');
       setIsVisible(true);
     } else if (session?.user) {
@@ -172,24 +189,35 @@ export default function UsernameSetupModal() {
       setLoading(true);
       setError('');
       
+      console.log('Submitting username:', username);
+      console.log('API URL:', getApiUrl('/api/users/set-username'));
+      
       const response = await fetch(getApiUrl('/api/users/set-username'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username }),
+        credentials: 'include' // Important for cookies/session
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
+      
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (!response.ok) {
+        console.error('Error setting username:', data.error);
         throw new Error(data.error || 'Failed to set username');
       }
       
       // Show success message
+      console.log('Username set successfully in API');
       setSuccess('Username set successfully! Redirecting...');
       
       try {
+        console.log('Updating session to remove needsUsername flag');
         // Update the session to remove the needsUsername flag
         await update({
           ...session,
@@ -199,6 +227,25 @@ export default function UsernameSetupModal() {
             username: username,
           },
         });
+        console.log('Session updated successfully');
+        
+        // Try to update the session again after a short delay to ensure it's properly updated
+        setTimeout(async () => {
+          try {
+            console.log('Performing second session update for redundancy');
+            await update({
+              ...session,
+              user: {
+                ...session.user,
+                needsUsername: false,
+                username: username,
+              },
+            });
+            console.log('Second session update completed');
+          } catch (error) {
+            console.error('Error in second session update:', error);
+          }
+        }, 1000);
       } catch (sessionError) {
         console.error("Error updating session:", sessionError);
         // Continue with redirect even if session update fails
@@ -209,12 +256,19 @@ export default function UsernameSetupModal() {
       
       // Add a shorter delay before closing the modal and redirecting to dashboard as a fallback
       setTimeout(() => {
+        console.log('Fallback redirect timer fired');
         // Close the modal first
         setIsVisible(false);
         
         // Force a hard redirect to dashboard to ensure navigation happens
         window.location.href = '/dashboard';
-      }, 1000); // Reduced to 1 second delay
+      }, 500); // Reduced to 0.5 second delay for faster response
+      
+      // Add a longer fallback timer in case the first one doesn't work
+      setTimeout(() => {
+        console.log('Emergency fallback redirect timer fired');
+        window.location.href = '/dashboard';
+      }, 3000); // 3 second emergency fallback
     } catch (error) {
       setError(error.message);
     } finally {
@@ -222,7 +276,9 @@ export default function UsernameSetupModal() {
     }
   };
   
-  if (!isVisible) {
+  // Don't render if not visible or if user doesn't need username
+  if (!isVisible || (session?.user && session.user.needsUsername === false)) {
+    console.log('Not rendering modal - invisible or username not needed');
     return null;
   }
   

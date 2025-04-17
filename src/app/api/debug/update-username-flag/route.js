@@ -1,4 +1,4 @@
-// src/app/api/users/set-username/route.js
+// src/app/api/debug/update-username-flag/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import connectDB from "@/lib/mongodb";
@@ -13,7 +13,7 @@ export async function OPTIONS(request) {
 }
 
 export async function POST(request) {
-  console.log("Set username API route called");
+  console.log("Debug update username flag API route called");
   
   try {
     // Check authentication
@@ -21,61 +21,32 @@ export async function POST(request) {
     const session = await getServerSession(authOptions);
     console.log("Session:", session ? "Session exists" : "No session");
     
-    if (session?.user) {
-      console.log("User ID from session:", session.user.id);
-    }
-
     if (!session) {
       console.log("Unauthorized - No session");
       const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       return corsMiddleware(request, response);
     }
-
+    
+    if (!session.user?.id) {
+      console.log("Unauthorized - No user ID in session");
+      const response = NextResponse.json({ error: "Unauthorized - No user ID" }, { status: 401 });
+      return corsMiddleware(request, response);
+    }
+    
+    console.log("User ID from session:", session.user.id);
+    
     // Get request body
     console.log("Parsing request body...");
     const body = await request.json();
-    const { username } = body;
-    console.log("Username from request:", username);
-
-    // Validate username
-    if (!username) {
-      const response = NextResponse.json(
-        { error: "Username is required" },
-        { status: 400 }
-      );
-      return corsMiddleware(request, response);
-    }
-
-    // Username must be 3-20 characters and only contain letters, numbers, and underscores
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!usernameRegex.test(username)) {
-      const response = NextResponse.json(
-        { error: "Username must be 3-20 characters and can only contain letters, numbers, and underscores" },
-        { status: 400 }
-      );
-      return corsMiddleware(request, response);
-    }
-
+    const { username, needsUsername } = body;
+    console.log("Request body:", { username, needsUsername });
+    
     // Connect to database
     console.log("Connecting to database...");
     await connectDB();
     console.log("Database connected");
-
-    // Check if username is already taken
-    console.log("Checking if username is already taken...");
-    const existingUser = await User.findOne({ username: username.toLowerCase() });
-    console.log("Existing user with same username:", existingUser ? "Found" : "Not found");
     
-    if (existingUser && existingUser._id.toString() !== session.user.id) {
-      console.log("Username already taken by another user");
-      const response = NextResponse.json(
-        { error: "Username is already taken" },
-        { status: 409 }
-      );
-      return corsMiddleware(request, response);
-    }
-
-    // Update user's username
+    // Get user from database
     console.log("Finding user by ID:", session.user.id);
     const user = await User.findById(session.user.id);
     console.log("User found:", user ? "Yes" : "No");
@@ -88,37 +59,55 @@ export async function POST(request) {
       );
       return corsMiddleware(request, response);
     }
-
-    // Update username and set needsUsername to false
+    
+    // Update user
     console.log("Previous username:", user.username);
     console.log("Previous needsUsername flag:", user.needsUsername);
     
-    user.username = username.toLowerCase();
-    user.needsUsername = false;
+    // Only update if values are provided
+    if (username !== undefined) {
+      user.username = username.toLowerCase();
+    }
     
-    console.log("Saving user with new username:", user.username);
+    if (needsUsername !== undefined) {
+      user.needsUsername = needsUsername;
+    }
+    
+    console.log("New username:", user.username);
     console.log("New needsUsername flag:", user.needsUsername);
     
+    // Save user
     await user.save();
     console.log("User saved successfully");
-
-    console.log("Preparing success response");
+    
+    // Return updated user data
     const response = NextResponse.json({
-      message: "Username set successfully",
-      username: user.username,
-      needsUsername: user.needsUsername
+      message: "User updated successfully",
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        needsUsername: user.needsUsername,
+        isVerified: user.isVerified,
+        updatedAt: user.updatedAt
+      }
     });
     
-    console.log("Applying CORS middleware");
     return corsMiddleware(request, response);
   } catch (error) {
-    console.error("Error setting username:", error);
+    console.error("Error updating user:", error);
     console.error("Error stack:", error.stack);
     
     const response = NextResponse.json(
-      { error: "Server error while setting username", details: error.message },
+      { 
+        error: "Server error while updating user", 
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
+    
     return corsMiddleware(request, response);
   }
 }
