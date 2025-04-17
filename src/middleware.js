@@ -3,6 +3,8 @@ import { getToken } from "next-auth/jwt";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  
+  console.log(`Middleware processing: ${pathname}`);
 
   // Check if the request is for a protected route
   const isProtectedRoute =
@@ -10,13 +12,17 @@ export async function middleware(request) {
     pathname.startsWith("/profile") ||
     pathname.startsWith("/group") ||
     pathname.startsWith("/search") ||
-    pathname.startsWith("/dashboard");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/settings");
 
   // Skip middleware for non-protected routes and API routes
   if (!isProtectedRoute || pathname.startsWith("/api")) {
+    console.log(`Skipping middleware for non-protected route: ${pathname}`);
     return NextResponse.next();
   }
-
+  
+  console.log(`Protected route detected: ${pathname}`);
   // Get the session token with secure options
   console.log(`Middleware: Checking auth for ${pathname}`);
   
