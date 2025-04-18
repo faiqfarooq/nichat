@@ -33,8 +33,6 @@ module.exports = {
       animation: {
         blob: 'blob 7s infinite',
         'scroll-down': 'scroll-down 1.5s ease-in-out infinite',
-        'fadeIn': 'fadeIn 0.5s ease-in-out',
-        'float': 'float 10s linear infinite',
       },
       keyframes: {
         blob: {
@@ -57,31 +55,6 @@ module.exports = {
           },
           '50%': {
             transform: 'translateY(6px)',
-          },
-        },
-        'fadeIn': {
-          '0%': {
-            opacity: '0',
-          },
-          '100%': {
-            opacity: '1',
-          },
-        },
-        'float': {
-          '0%': {
-            transform: 'translateY(0px) translateX(0px)',
-          },
-          '25%': {
-            transform: 'translateY(-10px) translateX(10px)',
-          },
-          '50%': {
-            transform: 'translateY(0px) translateX(20px)',
-          },
-          '75%': {
-            transform: 'translateY(10px) translateX(10px)',
-          },
-          '100%': {
-            transform: 'translateY(0px) translateX(0px)',
           },
         },
       },

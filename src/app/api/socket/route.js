@@ -74,6 +74,7 @@ export async function GET(req) {
         isOnline: true,
       });
       
+<<<<<<< HEAD
       // Handle direct messages
       socket.on('direct:message', async (data) => {
         try {
@@ -520,6 +521,8 @@ export async function GET(req) {
         }
       });
       
+=======
+>>>>>>> parent of 93a35b4 (added call)
       // Handle joining chat rooms
       socket.on('chat:join', (chatId) => {
         if (chatId) {
@@ -563,15 +566,7 @@ export async function GET(req) {
       // Handle new messages
       socket.on('message:new', async (messageData) => {
         try {
-          const { 
-            chatId, 
-            content, 
-            contentType = 'text', 
-            replyTo = null,
-            fileUrl = null,
-            fileName = null,
-            fileSize = null
-          } = messageData;
+          const { chatId, content, contentType = 'text', replyTo = null } = messageData;
           
           if (!chatId || !content) {
             return;
@@ -597,9 +592,6 @@ export async function GET(req) {
             content,
             contentType,
             replyTo,
-            fileUrl,
-            fileName,
-            fileSize,
             readBy: [socket.user.id], // Mark as read by sender
           });
           

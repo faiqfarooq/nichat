@@ -17,18 +17,12 @@ export async function POST(request) {
       return corsMiddleware(request, response);
     }
 
-    // Parse request body
-    const requestBody = await request.json();
-    
     const {
       chatId,
       content,
       contentType = "text",
       replyTo = null,
-      fileUrl = null,
-      fileName = null,
-      fileSize = null,
-    } = requestBody;
+    } = await request.json();
 
     if (!chatId || !content) {
       const response = NextResponse.json(
@@ -91,7 +85,7 @@ export async function POST(request) {
         return corsMiddleware(request, response);
       }
     }
-    
+
     // Create the message
     const message = await Message.create({
       chat: chatId,
@@ -99,9 +93,6 @@ export async function POST(request) {
       content,
       contentType,
       replyTo,
-      fileUrl,
-      fileName,
-      fileSize,
       readBy: [session.user.id], // Mark as read by sender
     });
 
@@ -232,19 +223,7 @@ export async function GET(request) {
     }
 
     // Get messages
-    const messages = await Message.find({
-      ...query,
-      $or: [
-        { deletedFor: { $ne: session.user.id } },
-        { deletedFor: { $exists: false } }
-      ],
-      $and: [
-        { $or: [
-          { deletedForEveryone: false },
-          { deletedForEveryone: { $exists: false } }
-        ]}
-      ]
-    })
+    const messages = await Message.find(query)
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate("sender", "name avatar")
