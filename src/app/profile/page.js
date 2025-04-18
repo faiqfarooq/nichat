@@ -1,6 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -14,21 +13,6 @@ import PendingRequests from "@/components/profile/PendingRequests";
 import FollowersList from "@/components/profile/FollowersList";
 import FollowingList from "@/components/profile/FollowingList";
 import ContactsList from "@/components/profile/ContactsList";
-=======
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { signOut } from 'next-auth/react';
-import Avatar from '@/components/ui/Avatar';
-import { useDispatch } from 'react-redux';
-import { updateUserAvatar, updateUserProfile } from '@/redux/slices/userSlice';
-import useUserData from '@/hooks/useUserData';
-import PendingRequests from '@/components/profile/PendingRequests';
-import FollowersList from '@/components/profile/FollowersList';
-import FollowingList from '@/components/profile/FollowingList';
-import ContactsList from '@/components/profile/ContactsList';
->>>>>>> parent of 93a35b4 (added call)
 
 export default function ProfilePage() {
   const { data: session, status: authStatus, update } = useSession();
@@ -182,7 +166,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-dark flex flex-col">
-<<<<<<< HEAD
       {/* Back button for mobile */}
       <div className="md:hidden fixed  left-4 z-10">
         <Link
@@ -206,21 +189,6 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-semibold text-white">Your Profile</h1>
       </div>
 
-=======
-      {/* Header */}
-      <header className="bg-dark-lighter border-b border-gray-700 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link href="/chat" className="mr-4 text-gray-400 hover:text-white">
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          
-          <h1 className="text-white font-semibold text-xl">Your Profile</h1>
-        </div>
-      </header>
-      
->>>>>>> parent of 93a35b4 (added call)
       {/* Main content */}
       <main className="flex-1 max-w-3xl mx-auto w-full p-6">
         {error && (
