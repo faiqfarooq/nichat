@@ -1,14 +1,23 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import LoginForm from "@/components/auth/LoginForm";
-import useAuthGuard from "@/hooks/useAuthGuard";
 
 export default function LoginPage() {
-  // Use auth guard with redirect to dashboard if already authenticated
-  useAuthGuard({
-    redirectToLoginOnUnauthenticated: false,
-    redirectToDashboardOnAuthenticated: true
-  });
+  const { status } = useSession();
+  const router = useRouter();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      // Get the intended destination from URL or default to dashboard
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get('callbackUrl');
+      router.push(callbackUrl || "/dashboard");
+    }
+  }, [status, router]);
 
   return (
     <div className="min-h-screen bg-dark flex flex-col">

@@ -1,81 +1,59 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { isProtectedRoute, shouldSkipAuthCheck } from "./lib/authUtils";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
   console.log(`Middleware processing: ${pathname}`);
 
-  // Skip middleware for non-protected routes
-  if (!isProtectedRoute(pathname) || shouldSkipAuthCheck(pathname)) {
+  // Check if the request is for a protected route
+  const isProtectedRoute =
+    pathname.startsWith("/chat") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/group") ||
+    pathname.startsWith("/search") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/settings");
+
+  // Skip middleware for non-protected routes and API routes
+  if (!isProtectedRoute || 
+      pathname.startsWith("/api") || 
+      pathname.startsWith("/debug")) {
     console.log(`Skipping middleware for non-protected route: ${pathname}`);
     return NextResponse.next();
   }
   
   console.log(`Protected route detected: ${pathname}`);
-  // Get the session token with secure options
-  console.log(`Middleware: Checking auth for ${pathname}`);
   
-  let token;
   try {
-    // Add a short timeout to ensure cookie processing is complete
-    token = await getToken({
+    // Get the token
+    const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === "production",
-      cookieName: process.env.NODE_ENV === "production" 
-        ? "__Secure-next-auth.session-token" 
-        : "next-auth.session-token",
+      secret: process.env.NEXTAUTH_SECRET
     });
     
-    console.log(`Middleware: Token found: ${!!token}`);
+    // If token exists, user is authenticated
     if (token) {
-      console.log(`Middleware: Token user: ${token.email}, verified: ${token.isVerified}`);
+      console.log(`User authenticated: ${token.email}`);
       
-      // Add debug info to response headers (only in development)
-      if (process.env.NODE_ENV === "development") {
-        const response = NextResponse.next();
-        response.headers.set("x-auth-status", "authenticated");
-        response.headers.set("x-auth-user", token.email || "unknown");
-        return response;
-      }
-      
-      // If user is not verified, redirect to a verification required page
+      // If user is not verified, redirect to verification page
       if (token.isVerified === false) {
-        // Log token details for debugging
-        console.log("User not verified, redirecting to verification-required page");
-        
-        const url = new URL("/verification-required", request.url);
-        return NextResponse.redirect(url);
+        console.log(`User not verified, redirecting to verification page`);
+        return NextResponse.redirect(new URL("/verification-required", request.url));
       }
       
       // User is authenticated and verified, allow access
       return NextResponse.next();
     }
     
-    // If no token, redirect to login with the callback URL
-    console.log(`Middleware: No token found, redirecting to login`);
-    const url = new URL("/login", request.url);
-    
-    // Ensure the callback URL is properly encoded
-    const callbackUrl = request.url;
-    console.log(`Setting callback URL: ${callbackUrl}`);
-    url.searchParams.set("callbackUrl", callbackUrl);
-    
-    return NextResponse.redirect(url);
+    // No token, redirect to login
+    console.log(`No token found, redirecting to login`);
+    return NextResponse.redirect(new URL("/login", request.url));
   } catch (error) {
-    console.error(`Middleware: Error getting token:`, error);
-    // If there's an error getting the token, redirect to login
-    const url = new URL("/login", request.url);
-    
-    // Ensure the callback URL is properly encoded
-    const callbackUrl = request.url;
-    console.log(`Setting callback URL (error case): ${callbackUrl}`);
-    url.searchParams.set("callbackUrl", callbackUrl);
-    url.searchParams.set("error", "AuthError");
-    
-    return NextResponse.redirect(url);
+    console.error(`Error in middleware:`, error);
+    // If there's an error, redirect to login
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 }
 
