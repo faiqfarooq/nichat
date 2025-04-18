@@ -12,10 +12,14 @@ export default function LoginPage() {
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (status === "authenticated") {
+      console.log("User is already authenticated, redirecting from login page");
+      
       // Get the intended destination from URL or default to dashboard
       const searchParams = new URLSearchParams(window.location.search);
       const callbackUrl = searchParams.get('callbackUrl');
-      router.push(callbackUrl || "/dashboard");
+      
+      // Use window.location for a hard redirect
+      window.location.href = callbackUrl || "/dashboard";
     }
   }, [status, router]);
 

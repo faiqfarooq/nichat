@@ -11,10 +11,13 @@ export default function RegisterPage() {
   
   const router = useRouter();
   
-  // Redirect to chat if already authenticated
+  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/chat');
+      console.log("User is already authenticated, redirecting from register page");
+      
+      // Use window.location for a hard redirect
+      window.location.href = '/dashboard';
     }
   }, [status, router]);
 
