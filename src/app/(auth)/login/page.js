@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import LoginForm from "@/components/auth/LoginForm";
+import SimpleLoginForm from "@/components/auth/SimpleLoginForm";
 
 export default function LoginPage() {
   const { status } = useSession();
@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-dark flex flex-col">
       <main className="flex-1 flex items-center justify-center p-4">
-        <LoginForm />
+        <SimpleLoginForm />
       </main>
     </div>
   );
