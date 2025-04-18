@@ -16,9 +16,30 @@ const baseUrl =
     ? process.env.NEXTAUTH_URL || "https://nichat.ninjacodex.co"
     : process.env.NEXTAUTH_URL;
 
-// Simple function to log authentication events
+// Helper function to log authentication events and handle production issues
 function logAuthEvent(event, data) {
   console.log(`[NextAuth] ${event}:`, data);
+}
+
+// Helper function to ensure URLs work in production
+function ensureAbsoluteUrl(url) {
+  if (!url) return '/dashboard';
+  
+  // If it's already an absolute URL, return it
+  if (url.startsWith('http')) return url;
+  
+  // If it's a relative URL, make it absolute
+  if (url.startsWith('/')) {
+    // In production, use the NEXTAUTH_URL
+    if (process.env.NODE_ENV === 'production') {
+      return `${process.env.NEXTAUTH_URL}${url}`;
+    }
+    // In development, it's fine as is
+    return url;
+  }
+  
+  // Default to dashboard
+  return '/dashboard';
 }
 
 export const authOptions = {
@@ -153,16 +174,14 @@ export const authOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Simple redirect logic
-      logAuthEvent('redirect', { url, baseUrl });
+      // Enhanced redirect logic for production
+      logAuthEvent('redirect', { url, baseUrl, env: process.env.NODE_ENV });
       
-      // If it's a relative URL or from the same site, allow it
-      if (url.startsWith('/') || url.startsWith(baseUrl)) {
-        return url;
-      }
+      // Ensure URLs work in production
+      const absoluteUrl = ensureAbsoluteUrl(url);
+      logAuthEvent('redirect resolved', { absoluteUrl });
       
-      // Default to dashboard
-      return '/dashboard';
+      return absoluteUrl;
     },
     
     async jwt({ token, user, account }) {
