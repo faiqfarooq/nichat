@@ -46,12 +46,14 @@ const LoginForm = () => {
     try {
       setLoading(true);
       setError('');
+      setSuccess('');
 
       // Use signIn without redirect to handle errors
       const result = await signIn('credentials', {
         redirect: false,
         email: formData.email,
         password: formData.password,
+        callbackUrl: '/dashboard', // Default callback URL
       });
 
       console.log('SignIn result:', result);
@@ -75,8 +77,11 @@ const LoginForm = () => {
       const searchParams = new URLSearchParams(window.location.search);
       const callbackUrl = searchParams.get('callbackUrl');
       
-      // Redirect to callbackUrl if it exists, otherwise to chat
-      router.push(callbackUrl || '/chat');
+      // Redirect to callbackUrl if it exists, otherwise to dashboard
+      setTimeout(() => {
+        // Force a hard navigation to ensure cookies are properly set
+        window.location.href = callbackUrl || '/dashboard';
+      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -228,7 +233,7 @@ const LoginForm = () => {
               const callbackUrl = searchParams.get('callbackUrl');
               
               signIn('google', { 
-                callbackUrl: callbackUrl || '/chat',
+                callbackUrl: callbackUrl || '/dashboard',
                 redirect: true // Force a server-side redirect
               });
             }}

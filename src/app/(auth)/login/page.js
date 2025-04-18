@@ -1,24 +1,14 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import LoginForm from "@/components/auth/LoginForm";
+import useAuthGuard from "@/hooks/useAuthGuard";
 
 export default function LoginPage() {
-  const { status } = useSession();
-
-  const router = useRouter();
-
-  // Redirect to chat if already authenticated
-  useEffect(() => {
-    if (status === "authenticated") {
-      // Get the intended destination from URL or default to chat
-      const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
-      router.push(callbackUrl || "/chat");
-    }
-  }, [status, router]);
+  // Use auth guard with redirect to dashboard if already authenticated
+  useAuthGuard({
+    redirectToLoginOnUnauthenticated: false,
+    redirectToDashboardOnAuthenticated: true
+  });
 
   return (
     <div className="min-h-screen bg-dark flex flex-col">
