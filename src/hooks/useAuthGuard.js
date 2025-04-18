@@ -31,7 +31,11 @@ export default function useAuthGuard({
       
       // Add the current URL as the callback URL
       const callbackUrl = encodeURIComponent(window.location.href);
-      router.push(`/login?callbackUrl=${callbackUrl}`);
+      console.log(`Setting callback URL in useAuthGuard: ${callbackUrl}`);
+      
+      // Use window.location for a hard navigation to ensure proper URL encoding
+      window.location.href = `/login?callbackUrl=${callbackUrl}`;
+      return; // Stop execution after redirect
     }
 
     // If user is authenticated and we should redirect (for login/register pages)
@@ -42,8 +46,18 @@ export default function useAuthGuard({
       const searchParams = new URLSearchParams(window.location.search);
       const callbackUrl = searchParams.get("callbackUrl");
       
-      // Redirect to callbackUrl if it exists, otherwise to fallbackUrl
-      router.push(callbackUrl || fallbackUrl);
+      if (callbackUrl) {
+        // Decode the URL if it's encoded
+        const decodedUrl = decodeURIComponent(callbackUrl);
+        console.log(`Redirecting to callback URL: ${decodedUrl}`);
+        
+        // Use window.location for a hard navigation
+        window.location.href = decodedUrl;
+      } else {
+        // Redirect to fallback URL
+        window.location.href = fallbackUrl;
+      }
+      return; // Stop execution after redirect
     }
   }, [
     status, 

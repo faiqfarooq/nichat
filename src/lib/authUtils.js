@@ -81,6 +81,12 @@ export function refreshAuthState() {
 export function redirectToLogin() {
   if (typeof window === 'undefined') return;
   
+  // Ensure the URL is properly encoded
   const currentUrl = encodeURIComponent(window.location.href);
-  window.location.href = `/login?callbackUrl=${currentUrl}`;
+  console.log(`Redirecting to login with callback URL: ${currentUrl}`);
+  
+  // Use a timeout to ensure any pending state updates are processed
+  setTimeout(() => {
+    window.location.href = `/login?callbackUrl=${currentUrl}`;
+  }, 100);
 }

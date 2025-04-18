@@ -80,8 +80,15 @@ const LoginForm = () => {
       // Redirect to callbackUrl if it exists, otherwise to dashboard
       setTimeout(() => {
         // Force a hard navigation to ensure cookies are properly set
-        window.location.href = callbackUrl || '/dashboard';
-      }, 1000);
+        if (callbackUrl) {
+          // Decode the URL if it's encoded
+          const decodedUrl = decodeURIComponent(callbackUrl);
+          console.log('Redirecting to:', decodedUrl);
+          window.location.href = decodedUrl;
+        } else {
+          window.location.href = '/dashboard';
+        }
+      }, 1500); // Increased timeout to ensure token is properly set
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -232,8 +239,12 @@ const LoginForm = () => {
               const searchParams = new URLSearchParams(window.location.search);
               const callbackUrl = searchParams.get('callbackUrl');
               
+              // Decode the URL if it's encoded
+              const decodedUrl = callbackUrl ? decodeURIComponent(callbackUrl) : '/dashboard';
+              console.log('Google sign-in with callback URL:', decodedUrl);
+              
               signIn('google', { 
-                callbackUrl: callbackUrl || '/dashboard',
+                callbackUrl: decodedUrl,
                 redirect: true // Force a server-side redirect
               });
             }}

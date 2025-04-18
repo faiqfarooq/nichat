@@ -16,6 +16,30 @@ const baseUrl =
     ? process.env.NEXTAUTH_URL || "https://nichat.ninjacodex.co"
     : process.env.NEXTAUTH_URL;
 
+// Helper function to handle callback URLs
+function handleCallbackUrl(callbackUrl) {
+  if (!callbackUrl) return '/dashboard';
+  
+  try {
+    // Decode the URL if it's encoded
+    const decodedUrl = decodeURIComponent(callbackUrl);
+    console.log(`Handling callback URL: ${decodedUrl}`);
+    
+    // Validate the URL to ensure it's safe
+    const url = new URL(decodedUrl, baseUrl);
+    
+    // Only allow URLs from the same origin or relative URLs
+    if (url.origin === baseUrl || decodedUrl.startsWith('/')) {
+      return decodedUrl;
+    }
+  } catch (error) {
+    console.error('Error handling callback URL:', error);
+  }
+  
+  // Default to dashboard if there's an issue
+  return '/dashboard';
+}
+
 export const authOptions = {
   // Set the base URL for NextAuth
   baseUrl,
@@ -147,6 +171,20 @@ export const authOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Handle callback URLs properly
+      console.log(`NextAuth redirect callback called with URL: ${url}`);
+      
+      // If the URL is a relative URL or belongs to the same site, allow it
+      if (url.startsWith('/') || url.startsWith(baseUrl)) {
+        // Process the URL to handle any encoding issues
+        return handleCallbackUrl(url);
+      }
+      
+      // Default to base URL
+      return baseUrl;
+    },
+    
     async jwt({ token, user, account }) {
       console.log(
         "JWT callback called with user:",
