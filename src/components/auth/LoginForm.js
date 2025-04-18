@@ -48,47 +48,22 @@ const LoginForm = () => {
       setError('');
       setSuccess('');
 
-      // Use signIn without redirect to handle errors
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-        callbackUrl: '/dashboard', // Default callback URL
-      });
-
-      console.log('SignIn result:', result);
-
-      if (result.error) {
-        // Check for verification error
-        if (result.error.includes('verify your email')) {
-          setError(result.error);
-          setEmailToResend(formData.email);
-          setShowResendLink(true);
-        } else {
-          setError(result.error);
-        }
-        return;
-      }
-
-      // If successful, redirect manually
+      // Get the callback URL from the query string
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+      
+      // Use signIn with redirect to let NextAuth handle the flow
       setSuccess('Login successful! Redirecting...');
       
-      // Check for callbackUrl in the URL
-      const searchParams = new URLSearchParams(window.location.search);
-      const callbackUrl = searchParams.get('callbackUrl');
+      // Use signIn with redirect
+      await signIn('credentials', {
+        redirect: true,
+        email: formData.email,
+        password: formData.password,
+        callbackUrl: callbackUrl
+      });
       
-      // Redirect to callbackUrl if it exists, otherwise to dashboard
-      setTimeout(() => {
-        // Force a hard navigation to ensure cookies are properly set
-        if (callbackUrl) {
-          // Decode the URL if it's encoded
-          const decodedUrl = decodeURIComponent(callbackUrl);
-          console.log('Redirecting to:', decodedUrl);
-          window.location.href = decodedUrl;
-        } else {
-          window.location.href = '/dashboard';
-        }
-      }, 1500); // Increased timeout to ensure token is properly set
+      // The code below won't execute due to the redirect
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -235,17 +210,14 @@ const LoginForm = () => {
         <div className="mt-6">
           <button
             onClick={() => {
-              // Check for callbackUrl in the URL
+              // Get the callback URL from the query string
               const searchParams = new URLSearchParams(window.location.search);
-              const callbackUrl = searchParams.get('callbackUrl');
+              const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
               
-              // Decode the URL if it's encoded
-              const decodedUrl = callbackUrl ? decodeURIComponent(callbackUrl) : '/dashboard';
-              console.log('Google sign-in with callback URL:', decodedUrl);
-              
+              // Use standard NextAuth flow
               signIn('google', { 
-                callbackUrl: decodedUrl,
-                redirect: true // Force a server-side redirect
+                callbackUrl: callbackUrl,
+                redirect: true
               });
             }}
             disabled={loading}

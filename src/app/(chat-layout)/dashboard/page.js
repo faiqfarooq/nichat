@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import useAuthGuard from "@/hooks/useAuthGuard";
 import Link from "next/link";
 import Sidebar from "@/components/layout/Sidebar";
 
 export default function Dashboard() {
-  const { session, status } = useAuthGuard();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [stats, setStats] = useState({
     messages: 0,
@@ -18,7 +18,12 @@ export default function Dashboard() {
   const [recentChats, setRecentChats] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Authentication is handled by useAuthGuard
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
 
   // Fetch dashboard data
   useEffect(() => {
