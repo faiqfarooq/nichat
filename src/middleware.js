@@ -27,15 +27,21 @@ export async function middleware(request) {
   console.log(`Protected route detected: ${pathname}`);
   
   try {
-    // Get the token
+    // Get the token with explicit options for production
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === "production",
+      cookieName: process.env.NODE_ENV === "production" 
+        ? "__Secure-next-auth.session-token" 
+        : "next-auth.session-token",
     });
+    
+    console.log(`Token found: ${!!token}`);
     
     // If token exists, user is authenticated
     if (token) {
-      console.log(`User authenticated: ${token.email}`);
+      console.log(`User authenticated: ${token.email || 'unknown'}`);
       
       // If user is not verified, redirect to verification page
       if (token.isVerified === false) {
@@ -47,13 +53,17 @@ export async function middleware(request) {
       return NextResponse.next();
     }
     
-    // No token, redirect to login
+    // No token, redirect to login with callback URL
     console.log(`No token found, redirecting to login`);
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", request.url);
+    return NextResponse.redirect(loginUrl);
   } catch (error) {
     console.error(`Error in middleware:`, error);
     // If there's an error, redirect to login
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("error", "AuthError");
+    return NextResponse.redirect(loginUrl);
   }
 }
 

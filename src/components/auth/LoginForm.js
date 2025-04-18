@@ -52,18 +52,27 @@ const LoginForm = () => {
       const searchParams = new URLSearchParams(window.location.search);
       const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
       
-      // Use signIn with redirect to let NextAuth handle the flow
       setSuccess('Login successful! Redirecting...');
       
-      // Use signIn with redirect
-      await signIn('credentials', {
-        redirect: true,
+      // Use signIn without redirect first to check for errors
+      const result = await signIn('credentials', {
+        redirect: false,
         email: formData.email,
         password: formData.password,
-        callbackUrl: callbackUrl
       });
       
-      // The code below won't execute due to the redirect
+      console.log('SignIn result:', result);
+      
+      if (result.error) {
+        // Handle errors
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+      
+      // If successful, manually redirect
+      console.log('Login successful, redirecting to:', callbackUrl);
+      window.location.href = callbackUrl;
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
