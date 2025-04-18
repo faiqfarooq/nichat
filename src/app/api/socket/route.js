@@ -74,7 +74,6 @@ export async function GET(req) {
         isOnline: true,
       });
       
-<<<<<<< HEAD
       // Handle direct messages
       socket.on('direct:message', async (data) => {
         try {
@@ -521,8 +520,6 @@ export async function GET(req) {
         }
       });
       
-=======
->>>>>>> parent of 93a35b4 (added call)
       // Handle joining chat rooms
       socket.on('chat:join', (chatId) => {
         if (chatId) {
