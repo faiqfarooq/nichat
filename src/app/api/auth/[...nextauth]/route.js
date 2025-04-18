@@ -16,37 +16,9 @@ const baseUrl =
     ? process.env.NEXTAUTH_URL || "https://nichat.ninjacodex.co"
     : process.env.NEXTAUTH_URL;
 
-// Helper function to log authentication events and handle production issues
-function logAuthEvent(event, data) {
-  console.log(`[NextAuth] ${event}:`, data);
-}
-
-// Helper function to ensure URLs work in production
-function ensureAbsoluteUrl(url) {
-  if (!url) return '/dashboard';
-  
-  // If it's already an absolute URL, return it
-  if (url.startsWith('http')) return url;
-  
-  // If it's a relative URL, make it absolute
-  if (url.startsWith('/')) {
-    // In production, use the NEXTAUTH_URL
-    if (process.env.NODE_ENV === 'production') {
-      return `${process.env.NEXTAUTH_URL}${url}`;
-    }
-    // In development, it's fine as is
-    return url;
-  }
-  
-  // Default to dashboard
-  return '/dashboard';
-}
-
 export const authOptions = {
   // Set the base URL for NextAuth
   baseUrl,
-  // Debug mode for development
-  debug: process.env.NODE_ENV === "development",
   // Force redirect after sign in
   pages: {
     signIn: "/login",
@@ -173,17 +145,6 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // Enhanced redirect logic for production
-      logAuthEvent('redirect', { url, baseUrl, env: process.env.NODE_ENV });
-      
-      // Ensure URLs work in production
-      const absoluteUrl = ensureAbsoluteUrl(url);
-      logAuthEvent('redirect resolved', { absoluteUrl });
-      
-      return absoluteUrl;
-    },
-    
     async jwt({ token, user, account }) {
       console.log(
         "JWT callback called with user:",
@@ -342,13 +303,9 @@ export const authOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        // Set a longer maxAge to prevent early expiration
-        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
   },
-  // Enable CSRF protection
-  useSecureCookies: process.env.NODE_ENV === "production",
   secret: process.env.NEXTAUTH_SECRET,
 };
 

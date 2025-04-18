@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/lib/apiUtils';
 
 const LoginForm = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,21 +20,21 @@ const LoginForm = () => {
   const [emailToResend, setEmailToResend] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
+  const searchParams = useSearchParams();
+  const verified = searchParams.get('verified');
+  
   // Show success message if user just verified their email
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const verified = urlParams.get('verified');
     if (verified === 'true') {
       setSuccess('Your email has been verified successfully! You can now log in.');
     }
-  }, []);
+  }, [verified]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Direct form submission to NextAuth endpoint
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -43,54 +46,42 @@ const LoginForm = () => {
     try {
       setLoading(true);
       setError('');
+
+      // Use signIn without redirect to handle errors
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      console.log('SignIn result:', result);
+
+      if (result.error) {
+        // Check for verification error
+        if (result.error.includes('verify your email')) {
+          setError(result.error);
+          setEmailToResend(formData.email);
+          setShowResendLink(true);
+        } else {
+          setError(result.error);
+        }
+        return;
+      }
+
+      // If successful, redirect manually
       setSuccess('Login successful! Redirecting...');
       
-      // Create a form and submit it directly
-      const form = document.createElement('form');
-      form.method = 'post';
-      form.action = '/api/auth/callback/credentials?redirect=/dashboard';
+      // Check for callbackUrl in the URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get('callbackUrl');
       
-      // Add CSRF token
-      const csrfField = document.createElement('input');
-      csrfField.type = 'hidden';
-      csrfField.name = 'csrfToken';
-      csrfField.value = await getCsrfToken();
-      form.appendChild(csrfField);
-      
-      // Add email field
-      const emailField = document.createElement('input');
-      emailField.type = 'hidden';
-      emailField.name = 'email';
-      emailField.value = formData.email;
-      form.appendChild(emailField);
-      
-      // Add password field
-      const passwordField = document.createElement('input');
-      passwordField.type = 'hidden';
-      passwordField.name = 'password';
-      passwordField.value = formData.password;
-      form.appendChild(passwordField);
-      
-      // Add to body and submit
-      document.body.appendChild(form);
-      form.submit();
-      
+      // Redirect to callbackUrl if it exists, otherwise to chat
+      router.push(callbackUrl || '/chat');
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
+    } finally {
       setLoading(false);
-    }
-  };
-  
-  // Get CSRF token
-  const getCsrfToken = async () => {
-    try {
-      const response = await fetch('/api/auth/csrf');
-      const data = await response.json();
-      return data.csrfToken;
-    } catch (error) {
-      console.error('Error getting CSRF token:', error);
-      return '';
     }
   };
 
@@ -230,9 +221,19 @@ const LoginForm = () => {
         </div>
         
         <div className="mt-6">
-          <a
-            href="/api/auth/signin/google?callbackUrl=/dashboard"
-            className="w-full flex items-center justify-center py-2 px-4 bg-white hover:bg-gray-100 text-gray-800 font-medium rounded transition duration-200"
+          <button
+            onClick={() => {
+              // Check for callbackUrl in the URL
+              const searchParams = new URLSearchParams(window.location.search);
+              const callbackUrl = searchParams.get('callbackUrl');
+              
+              signIn('google', { 
+                callbackUrl: callbackUrl || '/chat',
+                redirect: true // Force a server-side redirect
+              });
+            }}
+            disabled={loading}
+            className="w-full flex items-center justify-center py-2 px-4 bg-white hover:bg-gray-100 text-gray-800 font-medium rounded transition duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -241,7 +242,7 @@ const LoginForm = () => {
               />
             </svg>
             Sign in with Google
-          </a>
+          </button>
         </div>
       </div>
     </div>

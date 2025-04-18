@@ -17,50 +17,53 @@ export async function middleware(request) {
     pathname.startsWith("/settings");
 
   // Skip middleware for non-protected routes and API routes
-  if (!isProtectedRoute || 
-      pathname.startsWith("/api") || 
-      pathname.startsWith("/debug")) {
+  if (!isProtectedRoute || pathname.startsWith("/api")) {
     console.log(`Skipping middleware for non-protected route: ${pathname}`);
     return NextResponse.next();
   }
   
   console.log(`Protected route detected: ${pathname}`);
+  // Get the session token with secure options
+  console.log(`Middleware: Checking auth for ${pathname}`);
   
+  let token;
   try {
-    // Get the token with explicit options for production
-    const token = await getToken({
+    token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
       secureCookie: process.env.NODE_ENV === "production",
-      cookieName: process.env.NODE_ENV === "production" 
-        ? "__Secure-next-auth.session-token" 
-        : "next-auth.session-token",
     });
     
-    console.log(`Token found: ${!!token}`);
-    
-    // If token exists, user is authenticated
+    console.log(`Middleware: Token found: ${!!token}`);
     if (token) {
-      console.log(`User authenticated: ${token.email || 'unknown'}`);
-      
-      // If user is not verified, redirect to verification page
-      if (token.isVerified === false) {
-        console.log(`User not verified, redirecting to verification page`);
-        return NextResponse.redirect(new URL("/verification-required", request.url));
-      }
-      
-      // User is authenticated and verified, allow access
-      return NextResponse.next();
+      console.log(`Middleware: Token user: ${token.email}, verified: ${token.isVerified}`);
     }
-    
-    // No token, redirect to login without callback URL
-    console.log(`No token found, redirecting to login`);
-    return NextResponse.redirect(new URL("/login", request.url));
+
+    // If no token, redirect to login
+    if (!token) {
+      console.log(`Middleware: No token found, redirecting to login`);
+      const url = new URL("/login", request.url);
+      return NextResponse.redirect(url);
+    }
   } catch (error) {
-    console.error(`Error in middleware:`, error);
-    // If there's an error, redirect to login
-    return NextResponse.redirect(new URL("/login", request.url));
+    console.error(`Middleware: Error getting token:`, error);
+    // If there's an error getting the token, redirect to login
+    const url = new URL("/login", request.url);
+    return NextResponse.redirect(url);
   }
+
+  // If user is not verified, redirect to a verification required page
+  if (token && token.isVerified === false) {
+    // Log token details for debugging
+    console.log("User not verified, redirecting to verification-required page");
+    console.log("Token:", JSON.stringify(token, null, 2));
+    
+    const url = new URL("/verification-required", request.url);
+    return NextResponse.redirect(url);
+  }
+
+  // Allow access to protected route
+  return NextResponse.next();
 }
 
 // Configure which paths the middleware should run on
