@@ -48,10 +48,6 @@ const LoginForm = () => {
       setError('');
       setSuccess('');
 
-      // Get the callback URL from the query string
-      const searchParams = new URLSearchParams(window.location.search);
-      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-      
       setSuccess('Login successful! Redirecting...');
       
       // Use signIn without redirect first to check for errors
@@ -70,9 +66,9 @@ const LoginForm = () => {
         return;
       }
       
-      // If successful, manually redirect
-      console.log('Login successful, redirecting to:', callbackUrl);
-      window.location.href = callbackUrl;
+      // If successful, always redirect to dashboard
+      console.log('Login successful, redirecting to dashboard');
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -219,13 +215,9 @@ const LoginForm = () => {
         <div className="mt-6">
           <button
             onClick={() => {
-              // Get the callback URL from the query string
-              const searchParams = new URLSearchParams(window.location.search);
-              const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-              
-              // Use standard NextAuth flow
+              // Always redirect to dashboard for Google sign-in
               signIn('google', { 
-                callbackUrl: callbackUrl,
+                callbackUrl: '/dashboard',
                 redirect: true
               });
             }}

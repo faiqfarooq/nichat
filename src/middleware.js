@@ -53,17 +53,13 @@ export async function middleware(request) {
       return NextResponse.next();
     }
     
-    // No token, redirect to login with callback URL
+    // No token, redirect to login without callback URL
     console.log(`No token found, redirecting to login`);
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", request.url));
   } catch (error) {
     console.error(`Error in middleware:`, error);
     // If there's an error, redirect to login
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", "AuthError");
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 }
 
