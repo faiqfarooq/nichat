@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import useAuthGuard from "@/hooks/useAuthGuard";
 import { motion, AnimatePresence } from "framer-motion";
 import ChatItem from "@/components/chat/ChatItem";
 import SearchBar from "@/components/search/SearchBar";
 import { getApiUrl } from "@/lib/apiUtils";
 
 export default function ChatPage() {
-  const { data: session, status } = useSession();
+  const { session } = useAuthGuard();
   const router = useRouter();
 
   const [chats, setChats] = useState([]);
@@ -26,12 +26,7 @@ export default function ChatPage() {
 
   const observerTarget = useRef(null);
 
-  // Check if user is authenticated
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
+  // Authentication is handled by useAuthGuard
 
   // Fetch user's chats
   const fetchChats = async (pageNum = 1, append = false) => {

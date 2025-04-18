@@ -19,6 +19,8 @@ const baseUrl =
 export const authOptions = {
   // Set the base URL for NextAuth
   baseUrl,
+  // Debug mode for development
+  debug: process.env.NODE_ENV === "development",
   // Force redirect after sign in
   pages: {
     signIn: "/login",
@@ -303,9 +305,13 @@ export const authOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        // Set a longer maxAge to prevent early expiration
+        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
   },
+  // Enable CSRF protection
+  useSecureCookies: process.env.NODE_ENV === "production",
   secret: process.env.NEXTAUTH_SECRET,
 };
 
