@@ -209,23 +209,20 @@ export default function EnhancedNavbar() {
                     variants={menuItemVariants}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark-lighter transition-colors hover:border-primary/50 group"
+                    className="flex items-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark-lighter transition-colors"
                   >
-                    <div className="relative">
-                      {session.user.avatar ? (
-                        <img 
-                          src={session.user.avatar}
-                          alt={session.user.name}
-                          className="w-6 h-6 rounded-full mr-2 group-hover:shadow-glow transition-all duration-300" 
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-dark font-bold text-sm mr-2 group-hover:shadow-glow transition-all duration-300">
-                          {session.user.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-dark-lighter"></span>
-                    </div>
-                    <span className="group-hover:text-primary transition-colors duration-300">{session.user.name}</span>
+                    {session.user.avatar ? (
+                      <img 
+                        src={session.user.avatar}
+                        alt={session.user.name}
+                        className="w-6 h-6 rounded-full mr-2" 
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-sm mr-2">
+                        {session.user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span>{session.user.name}</span>
                   </motion.div>
                 </Link>
               </>
@@ -247,7 +244,7 @@ export default function EnhancedNavbar() {
                     variants={menuItemVariants}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-dark font-medium rounded-lg relative overflow-hidden group shadow-lg hover:shadow-primary/30 transition-all duration-300"
+                    className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-dark font-medium rounded-lg relative overflow-hidden group"
                   >
                     <span className="relative z-10">Sign Up</span>
                     <motion.div
@@ -355,22 +352,19 @@ export default function EnhancedNavbar() {
                     <motion.div
                       variants={mobileMenuItemVariants}
                       whileTap={{ scale: 0.95 }}
-                      className="flex items-center justify-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors hover:border-primary/50"
+                      className="flex items-center justify-center px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-dark transition-colors"
                     >
-                      <div className="relative">
-                        {session.user.avatar ? (
-                          <img 
-                            src={session.user.avatar}
-                            alt={session.user.name}
-                            className="w-5 h-5 rounded-full mr-2" 
-                          />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-dark font-bold text-xs mr-2">
-                            {session.user.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full border border-dark-lighter"></span>
-                      </div>
+                      {session.user.avatar ? (
+                        <img 
+                          src={session.user.avatar}
+                          alt={session.user.name}
+                          className="w-5 h-5 rounded-full mr-2" 
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-xs mr-2">
+                          {session.user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <span>Profile</span>
                     </motion.div>
                   </Link>

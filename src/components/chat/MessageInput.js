@@ -81,70 +81,47 @@ const MessageInput = forwardRef(({ onSendMessage, onTyping, replyTo, onCancelRep
   };
   
   // Handle file selection for attachments
-  const handleFileSelect = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
     // Reset attachment menu
     setShowAttachmentMenu(false);
     
-    // Determine content type
-    let contentType = 'file';
-    let resourceType = 'raw';
+    // TODO: Handle file upload to storage service
+    // For now, we'll just simulate it
+    const reader = new FileReader();
     
-    if (file.type.startsWith('image/')) {
-      contentType = 'image';
-      resourceType = 'image';
-    } else if (file.type.startsWith('audio/')) {
-      contentType = 'audio';
-      resourceType = 'video'; // Cloudinary uses 'video' resource type for audio files
-    } else if (file.type.startsWith('video/')) {
-      contentType = 'video';
-      resourceType = 'video';
-    }
-    
-    try {
-      // Create form data for upload
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('resourceType', resourceType);
+    reader.onload = (event) => {
+      const fileUrl = event.target.result;
       
-      // Show loading state (could add a loading indicator here)
-      
-      // Upload the file to the appropriate endpoint
-      const uploadEndpoint = contentType === 'image' 
-        ? '/api/upload/image' 
-        : '/api/upload/file';
-      
-      const response = await fetch(uploadEndpoint, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload file');
+      // Determine content type
+      let contentType = 'file';
+      if (file.type.startsWith('image/')) {
+        contentType = 'image';
+      } else if (file.type.startsWith('audio/')) {
+        contentType = 'audio';
+      } else if (file.type.startsWith('video/')) {
+        contentType = 'video';
       }
       
-      const data = await response.json();
-      
-      // Send file message with the uploaded file URL
+      // Send file message
       onSendMessage(
         file.name,
         contentType,
         replyTo?._id,
         {
-          fileUrl: data.url,
-          fileName: data.fileName || file.name,
-          fileSize: data.fileSize || file.size,
+          fileUrl,
+          fileName: file.name,
+          fileSize: file.size,
         }
       );
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Failed to upload file. Please try again.');
-    } finally {
-      // Reset input
-      e.target.value = '';
-    }
+    };
+    
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    e.target.value = '';
   };
   
   // Trigger file input click based on type
@@ -166,130 +143,37 @@ const MessageInput = forwardRef(({ onSendMessage, onTyping, replyTo, onCancelRep
     setShowAttachmentMenu(false);
   };
   
-  // Media recorder reference
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  
   // Handle voice recording start
-  const handleStartRecording = async () => {
-    try {
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Create media recorder
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      // Set up event handlers
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      
-      // Start recording
-      mediaRecorder.start();
-      setIsRecording(true);
-      
-      // Start timer
-      setRecordingTime(0);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      
-      // Close menus
-      setShowAttachmentMenu(false);
-      setShowEmojiPicker(false);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      alert('Could not access microphone. Please check your browser permissions.');
-    }
+  const handleStartRecording = () => {
+    setIsRecording(true);
+    
+    // Start timer
+    setRecordingTime(0);
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingTime(prev => prev + 1);
+    }, 1000);
+    
+    // TODO: Implement actual recording
+    
+    // Close menus
+    setShowAttachmentMenu(false);
+    setShowEmojiPicker(false);
   };
   
   // Handle voice recording stop
-  const handleStopRecording = async () => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
-      setIsRecording(false);
-      return;
-    }
-    
-    // Stop recording
-    mediaRecorderRef.current.stop();
+  const handleStopRecording = () => {
+    setIsRecording(false);
     
     // Stop timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
     }
     
-    // Process the recorded audio
-    mediaRecorderRef.current.onstop = async () => {
-      try {
-        // Create audio blob
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
-        // Create a file name
-        const fileName = `voice_message_${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
-        
-        // Create a File object from the Blob
-        const audioFile = new File([audioBlob], fileName, { type: 'audio/webm' });
-        
-        // Create form data for upload
-        const formData = new FormData();
-        formData.append('file', audioFile);
-        formData.append('resourceType', 'video'); // Cloudinary uses 'video' resource type for audio files
-        
-        // Upload the audio file
-        const response = await fetch('/api/upload/file', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to upload audio file');
-        }
-        
-        const data = await response.json();
-        
-        // Send the audio message with the uploaded file URL
-        onSendMessage(
-          fileName,
-          "audio",
-          replyTo?._id,
-          {
-            fileUrl: data.url,
-            fileName: data.fileName || fileName,
-            fileSize: data.fileSize || audioBlob.size,
-          }
-        );
-      } catch (error) {
-        console.error('Error uploading audio:', error);
-        alert('Failed to upload audio. Please try again.');
-        
-        // Fallback to local URL if upload fails
-        const audioUrl = URL.createObjectURL(new Blob(audioChunksRef.current, { type: 'audio/webm' }));
-        const fileName = `voice_message_${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
-        
-        onSendMessage(
-          fileName,
-          "audio",
-          replyTo?._id,
-          {
-            fileUrl: audioUrl,
-            fileName: fileName,
-            fileSize: new Blob(audioChunksRef.current, { type: 'audio/webm' }).size,
-          }
-        );
-      } finally {
-        // Stop all tracks in the stream
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-        
-        // Reset recording state
-        setIsRecording(false);
-        mediaRecorderRef.current = null;
-        audioChunksRef.current = [];
-      }
-    };
+    // TODO: Implement actual recording stop and send
+    // For demo, just send a placeholder message
+    if (recordingTime > 0) {
+      onSendMessage("Voice message (demo)", "audio");
+    }
   };
   
   // Format recording time
