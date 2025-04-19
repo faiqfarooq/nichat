@@ -14,7 +14,7 @@ export function getApiBaseUrl() {
   // In server environment
   return process.env.NODE_ENV === 'production' 
     ? process.env.NEXTAUTH_URL || 'https://nichat.ninjacodex.co'
-    : '';
+    : process.env.NEXTAUTH_URL || 'http://localhost:3000';
 }
 
 /**

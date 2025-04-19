@@ -16,7 +16,13 @@ export default function LoginPage() {
     if (status === "authenticated") {
       // Get the intended destination from URL or default to dashboard
       const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
-      router.push(callbackUrl || "/dashboard");
+      
+      // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
+      if (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) {
+        router.push("/dashboard");
+      } else {
+        router.push(callbackUrl);
+      }
     }
   }, [status, router]);
 

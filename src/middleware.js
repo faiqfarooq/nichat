@@ -32,6 +32,9 @@ export async function middleware(request) {
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
       secureCookie: process.env.NODE_ENV === "production",
+      cookieName: process.env.NODE_ENV === "production" 
+        ? "__Secure-next-auth.session-token" 
+        : "next-auth.session-token",
     });
     
     console.log(`Middleware: Token found: ${!!token}`);
@@ -42,16 +45,34 @@ export async function middleware(request) {
     // If no token, redirect to login with callback URL
     if (!token) {
       console.log(`Middleware: No token found, redirecting to login`);
-      const callbackUrl = encodeURIComponent(request.nextUrl.pathname);
-      const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
-      return NextResponse.redirect(url);
+      
+      // Only use callbackUrl if it's not the login page itself or doesn't already have a callbackUrl
+      const pathname = request.nextUrl.pathname;
+      if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
+        const callbackUrl = encodeURIComponent(pathname);
+        const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
+        return NextResponse.redirect(url);
+      } else {
+        // Just redirect to login without a callback
+        const url = new URL('/login', request.url);
+        return NextResponse.redirect(url);
+      }
     }
   } catch (error) {
     console.error(`Middleware: Error getting token:`, error);
     // If there's an error getting the token, redirect to login
-    const callbackUrl = encodeURIComponent(request.nextUrl.pathname);
-    const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
-    return NextResponse.redirect(url);
+    
+    // Only use callbackUrl if it's not the login page itself or doesn't already have a callbackUrl
+    const pathname = request.nextUrl.pathname;
+    if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
+      const callbackUrl = encodeURIComponent(pathname);
+      const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
+      return NextResponse.redirect(url);
+    } else {
+      // Just redirect to login without a callback
+      const url = new URL('/login', request.url);
+      return NextResponse.redirect(url);
+    }
   }
 
   // If user is not verified, redirect to a verification required page
