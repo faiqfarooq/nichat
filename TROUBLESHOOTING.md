@@ -230,6 +230,94 @@ If you're experiencing authentication issues specifically in production:
 6. For redirection issues after login, try using `window.location.href` for hard redirects instead of Next.js router.
 7. Increase the session token maxAge to improve persistence (30 days is recommended).
 
+### Error: Stuck on login page after authentication
+
+If users are stuck on the login page after authentication and can't access other pages:
+
+1. Try using multiple cookie name checks in middleware:
+   ```javascript
+   // Try multiple cookie names to ensure we find the token in production
+   const cookieNames = [
+     "next-auth.session-token",
+     "__Secure-next-auth.session-token",
+     "__Host-next-auth.session-token"
+   ];
+   
+   // Try each cookie name until we find a token
+   for (const cookieName of cookieNames) {
+     try {
+       token = await getToken({
+         req: request,
+         secret: process.env.NEXTAUTH_SECRET,
+         secureCookie: process.env.NODE_ENV === "production",
+         cookieName: cookieName,
+       });
+       
+       if (token) {
+         console.log(`Found token using cookie name: ${cookieName}`);
+         break;
+       }
+     } catch (err) {
+       console.log(`Error getting token with cookie name ${cookieName}:`, err);
+     }
+   }
+   ```
+
+2. Let NextAuth handle cookie naming automatically:
+   ```javascript
+   // Don't explicitly set cookie names to let NextAuth handle it based on environment
+   cookies: {
+     sessionToken: {
+       options: {
+         httpOnly: true,
+         sameSite: 'lax',
+         path: '/',
+         secure: process.env.NODE_ENV === 'production',
+         maxAge: 30 * 24 * 60 * 60, // 30 days
+       },
+     },
+   },
+   ```
+
+3. Use NextAuth's built-in redirect handling:
+   ```javascript
+   // Use signIn with redirect:true for more reliable redirection
+   signIn('credentials', {
+     redirect: true,
+     callbackUrl: redirectUrl,
+     email: formData.email,
+     password: formData.password
+   });
+   ```
+
+4. Implement a custom redirect callback in NextAuth:
+   ```javascript
+   async redirect({ url, baseUrl }) {
+     // If the URL is a callback URL with login in it, extract the callback URL
+     if (url.includes('/login') && url.includes('callbackUrl')) {
+       try {
+         const urlObj = new URL(url);
+         const callbackUrl = urlObj.searchParams.get('callbackUrl');
+         
+         // If the callback URL is valid and not a login page, use it
+         if (callbackUrl && !callbackUrl.includes('/login') && !callbackUrl.includes('callbackUrl')) {
+           return callbackUrl.startsWith('/') ? `${baseUrl}${callbackUrl}` : callbackUrl;
+         }
+       } catch (error) {
+         console.error('Error parsing URL:', error);
+       }
+     }
+     
+     // If the URL is the login page or has issues, redirect to dashboard
+     if (url.includes('/login')) {
+       return `${baseUrl}/dashboard`;
+     }
+     
+     // Default to dashboard
+     return `${baseUrl}/dashboard`;
+   }
+   ```
+
 ## Still Having Issues?
 
 If you're still experiencing problems:

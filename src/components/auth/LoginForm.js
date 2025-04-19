@@ -65,19 +65,22 @@ const LoginForm = () => {
       // Show success message
       setSuccess('Login successful! Redirecting...');
       
-      // Add a longer delay before redirecting to ensure the session is properly set in production
-      setTimeout(() => {
-        // Use window.location for a hard redirect instead of router.replace
-        // This ensures a complete page reload which helps with session persistence in production
-        const callbackUrl = searchParams.get('callbackUrl');
-        
-        // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, redirect to dashboard
-        if (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) {
-          window.location.href = '/dashboard';
-        } else {
-          window.location.href = callbackUrl;
-        }
-      }, 1500);
+      // Use signIn with redirect:true for more reliable redirection
+      // This will use NextAuth's built-in redirect handling
+      const callbackUrl = searchParams.get('callbackUrl');
+      
+      // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
+      const redirectUrl = (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) 
+        ? '/dashboard' 
+        : callbackUrl;
+      
+      // Use signIn again with redirect:true to trigger the server-side redirect
+      signIn('credentials', {
+        redirect: true,
+        callbackUrl: redirectUrl,
+        email: formData.email,
+        password: formData.password
+      });
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
