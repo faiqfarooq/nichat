@@ -28,14 +28,31 @@ export async function middleware(request) {
   
   let token;
   try {
-    token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === "production",
-      cookieName: process.env.NODE_ENV === "production" 
-        ? "__Secure-next-auth.session-token" 
-        : "next-auth.session-token",
-    });
+    // Try multiple cookie names to ensure we find the token in production
+    const cookieNames = [
+      "next-auth.session-token",
+      "__Secure-next-auth.session-token",
+      "__Host-next-auth.session-token"
+    ];
+    
+    // Try each cookie name until we find a token
+    for (const cookieName of cookieNames) {
+      try {
+        token = await getToken({
+          req: request,
+          secret: process.env.NEXTAUTH_SECRET,
+          secureCookie: process.env.NODE_ENV === "production",
+          cookieName: cookieName,
+        });
+        
+        if (token) {
+          console.log(`Middleware: Found token using cookie name: ${cookieName}`);
+          break;
+        }
+      } catch (err) {
+        console.log(`Middleware: Error getting token with cookie name ${cookieName}:`, err);
+      }
+    }
     
     console.log(`Middleware: Token found: ${!!token}`);
     if (token) {
