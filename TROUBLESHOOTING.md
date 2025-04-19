@@ -234,7 +234,7 @@ If you're experiencing authentication issues specifically in production:
 
 If users are stuck on the login page after authentication and can't access other pages:
 
-1. Try using multiple cookie name checks in middleware:
+1. Try using multiple cookie names to ensure we find the token in production:
    ```javascript
    // Try multiple cookie names to ensure we find the token in production
    const cookieNames = [
@@ -279,43 +279,56 @@ If users are stuck on the login page after authentication and can't access other
    },
    ```
 
-3. Use NextAuth's built-in redirect handling:
+3. Use localStorage as a fallback for authentication:
    ```javascript
-   // Use signIn with redirect:true for more reliable redirection
-   signIn('credentials', {
-     redirect: true,
-     callbackUrl: redirectUrl,
+   // Store authentication data in localStorage for better persistence
+   localStorage.setItem('isLoggedIn', 'true');
+   localStorage.setItem('user', JSON.stringify({
      email: formData.email,
-     password: formData.password
-   });
+     timestamp: new Date().toISOString()
+   }));
    ```
 
-4. Implement a custom redirect callback in NextAuth:
+4. Implement a client-side authentication check component:
    ```javascript
-   async redirect({ url, baseUrl }) {
-     // If the URL is a callback URL with login in it, extract the callback URL
-     if (url.includes('/login') && url.includes('callbackUrl')) {
-       try {
-         const urlObj = new URL(url);
-         const callbackUrl = urlObj.searchParams.get('callbackUrl');
-         
-         // If the callback URL is valid and not a login page, use it
-         if (callbackUrl && !callbackUrl.includes('/login') && !callbackUrl.includes('callbackUrl')) {
-           return callbackUrl.startsWith('/') ? `${baseUrl}${callbackUrl}` : callbackUrl;
-         }
-       } catch (error) {
-         console.error('Error parsing URL:', error);
+   export default function AuthCheck({ children }) {
+     const router = useRouter();
+     const { data: session, status } = useSession();
+     const [isAuthenticated, setIsAuthenticated] = useState(false);
+     
+     useEffect(() => {
+       // First check NextAuth session
+       if (status === 'authenticated' && session) {
+         setIsAuthenticated(true);
+         return;
        }
-     }
+       
+       // Then check localStorage as fallback
+       const isLoggedIn = localStorage.getItem('isLoggedIn');
+       if (isLoggedIn === 'true') {
+         setIsAuthenticated(true);
+         return;
+       }
+       
+       // If not authenticated, redirect to login
+       router.push('/login');
+     }, [session, status, router]);
      
-     // If the URL is the login page or has issues, redirect to dashboard
-     if (url.includes('/login')) {
-       return `${baseUrl}/dashboard`;
-     }
-     
-     // Default to dashboard
-     return `${baseUrl}/dashboard`;
+     return isAuthenticated ? children : null;
    }
+   ```
+
+5. Simplify the middleware to make it more reliable:
+   ```javascript
+   // If we found a token, allow access
+   if (token) {
+     return NextResponse.next();
+   }
+   
+   // If no token found, redirect to login with callback URL
+   const callbackUrl = encodeURIComponent(pathname);
+   const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
+   return NextResponse.redirect(url);
    ```
 
 ## Still Having Issues?

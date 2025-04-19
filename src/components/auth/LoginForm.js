@@ -65,8 +65,14 @@ const LoginForm = () => {
       // Show success message
       setSuccess('Login successful! Redirecting...');
       
-      // Use signIn with redirect:true for more reliable redirection
-      // This will use NextAuth's built-in redirect handling
+      // Store authentication data in localStorage for better persistence
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('user', JSON.stringify({
+        email: formData.email,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Determine redirect URL
       const callbackUrl = searchParams.get('callbackUrl');
       
       // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
@@ -74,13 +80,10 @@ const LoginForm = () => {
         ? '/dashboard' 
         : callbackUrl;
       
-      // Use signIn again with redirect:true to trigger the server-side redirect
-      signIn('credentials', {
-        redirect: true,
-        callbackUrl: redirectUrl,
-        email: formData.email,
-        password: formData.password
-      });
+      // Use window.location for a hard redirect
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');

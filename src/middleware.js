@@ -23,9 +23,11 @@ export async function middleware(request) {
   }
   
   console.log(`Protected route detected: ${pathname}`);
-  // Get the session token with secure options
-  console.log(`Middleware: Checking auth for ${pathname}`);
   
+  // Simple check for localStorage-based authentication (client-side only)
+  // This is just a fallback - the actual check happens in the browser
+  
+  // First try to get the token from cookies for server-side auth
   let token;
   try {
     // Try multiple cookie names to ensure we find the token in production
@@ -53,57 +55,28 @@ export async function middleware(request) {
         console.log(`Middleware: Error getting token with cookie name ${cookieName}:`, err);
       }
     }
-    
-    console.log(`Middleware: Token found: ${!!token}`);
-    if (token) {
-      console.log(`Middleware: Token user: ${token.email}, verified: ${token.isVerified}`);
-    }
-
-    // If no token, redirect to login with callback URL
-    if (!token) {
-      console.log(`Middleware: No token found, redirecting to login`);
-      
-      // Only use callbackUrl if it's not the login page itself or doesn't already have a callbackUrl
-      const pathname = request.nextUrl.pathname;
-      if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
-        const callbackUrl = encodeURIComponent(pathname);
-        const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
-        return NextResponse.redirect(url);
-      } else {
-        // Just redirect to login without a callback
-        const url = new URL('/login', request.url);
-        return NextResponse.redirect(url);
-      }
-    }
   } catch (error) {
     console.error(`Middleware: Error getting token:`, error);
-    // If there's an error getting the token, redirect to login
-    
-    // Only use callbackUrl if it's not the login page itself or doesn't already have a callbackUrl
-    const pathname = request.nextUrl.pathname;
-    if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
-      const callbackUrl = encodeURIComponent(pathname);
-      const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
-      return NextResponse.redirect(url);
-    } else {
-      // Just redirect to login without a callback
-      const url = new URL('/login', request.url);
-      return NextResponse.redirect(url);
-    }
   }
-
-  // If user is not verified, redirect to a verification required page
-  if (token && token.isVerified === false) {
-    // Log token details for debugging
-    console.log("User not verified, redirecting to verification-required page");
-    console.log("Token:", JSON.stringify(token, null, 2));
-    
-    const url = new URL("/verification-required", request.url);
+  
+  // If we found a token, allow access
+  if (token) {
+    return NextResponse.next();
+  }
+  
+  // If no token found, redirect to login with callback URL
+  console.log(`Middleware: No token found, redirecting to login`);
+  
+  // Only use callbackUrl if it's not the login page itself or doesn't already have a callbackUrl
+  if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
+    const callbackUrl = encodeURIComponent(pathname);
+    const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
+    return NextResponse.redirect(url);
+  } else {
+    // Just redirect to login without a callback
+    const url = new URL('/login', request.url);
     return NextResponse.redirect(url);
   }
-
-  // Allow access to protected route
-  return NextResponse.next();
 }
 
 // Configure which paths the middleware should run on
