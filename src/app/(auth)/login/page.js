@@ -11,12 +11,12 @@ export default function LoginPage() {
 
   const router = useRouter();
 
-  // Redirect to chat if already authenticated
+  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (status === "authenticated") {
-      // Get the intended destination from URL or default to chat
+      // Get the intended destination from URL or default to dashboard
       const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
-      router.push(callbackUrl || "/chat");
+      router.push(callbackUrl || "/dashboard");
     }
   }, [status, router]);
 

@@ -69,7 +69,7 @@ const LoginForm = () => {
       setTimeout(() => {
         // Use window.location for a hard redirect instead of router.replace
         // This ensures a complete page reload which helps with session persistence in production
-        window.location.href = '/chat';
+        window.location.href = searchParams.get('callbackUrl') || '/dashboard';
       }, 1500);
     } catch (error) {
       console.error('Login error:', error);
@@ -218,11 +218,11 @@ const LoginForm = () => {
           <button
             onClick={() => {
               // Check for callbackUrl in the URL
-              const searchParams = new URLSearchParams(window.location.search);
-              const callbackUrl = searchParams.get('callbackUrl');
+              const params = new URLSearchParams(window.location.search);
+              const callbackUrl = params.get('callbackUrl');
               
               signIn('google', { 
-                callbackUrl: callbackUrl || '/chat',
+                callbackUrl: callbackUrl || '/dashboard',
                 redirect: true // Force a server-side redirect
               });
             }}
