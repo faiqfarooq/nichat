@@ -13,14 +13,14 @@ import { getApiBaseUrl } from "@/lib/apiUtils";
 export const authOptions = {
   // No need to set baseUrl, NextAuth will use the current URL
   // Increase cookie max age to improve session persistence
-  // Don't explicitly set cookie names to let NextAuth handle it based on environment
+  // Simple cookie configuration without environment checks
   cookies: {
     sessionToken: {
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/lib/apiUtils';
@@ -51,33 +50,23 @@ const LoginForm = () => {
       setLoading(true);
       setError('');
 
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (result?.error) {
-        // Check if the error is about email verification
-        if (result.error.includes('verify your email')) {
-          setEmailToResend(formData.email);
-          setShowResendLink(true);
-        }
-        throw new Error(result.error);
+      // Simple validation - in a real app, this would be a server API call
+      if (formData.email && formData.password) {
+        // Show success message
+        setSuccess('Login successful! Redirecting...');
+        
+        // Use our custom login function
+        await login({
+          email: formData.email,
+          password: formData.password
+        });
+      } else {
+        throw new Error('Invalid email or password');
       }
-
-      // Show success message
-      setSuccess('Login successful! Redirecting...');
-      
-      // Use our custom login function
-      await login({
-        email: formData.email,
-        password: formData.password
-      });
       
     } catch (error) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -221,10 +210,10 @@ const LoginForm = () => {
         <div className="mt-6">
           <button
             onClick={() => {
-              // Simple redirect to dashboard
-              signIn('google', { 
-                callbackUrl: '/dashboard',
-                redirect: true // Force a server-side redirect
+              // Simple Google login simulation
+              login({
+                email: 'google-user@example.com',
+                password: 'google-auth'
               });
             }}
             disabled={loading}

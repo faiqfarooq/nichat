@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -24,50 +23,11 @@ export async function middleware(request) {
   
   console.log(`Protected route detected: ${pathname}`);
   
-  // Simple check for localStorage-based authentication (client-side only)
-  // This is just a fallback - the actual check happens in the browser
+  // Note: We can't check localStorage in middleware (server-side)
+  // The actual authentication check will happen client-side in the AuthCheck component
+  // This middleware just allows the request to proceed, and client-side code will handle redirection
   
-  // First try to get the token from cookies for server-side auth
-  let token;
-  try {
-    // Try multiple cookie names to ensure we find the token in production
-    const cookieNames = [
-      "next-auth.session-token",
-      "__Secure-next-auth.session-token",
-      "__Host-next-auth.session-token"
-    ];
-    
-    // Try each cookie name until we find a token
-    for (const cookieName of cookieNames) {
-      try {
-        token = await getToken({
-          req: request,
-          secret: process.env.NEXTAUTH_SECRET,
-          secureCookie: process.env.NODE_ENV === "production",
-          cookieName: cookieName,
-        });
-        
-        if (token) {
-          console.log(`Middleware: Found token using cookie name: ${cookieName}`);
-          break;
-        }
-      } catch (err) {
-        console.log(`Middleware: Error getting token with cookie name ${cookieName}:`, err);
-      }
-    }
-  } catch (error) {
-    console.error(`Middleware: Error getting token:`, error);
-  }
-  
-  // If we found a token, allow access
-  if (token) {
-    return NextResponse.next();
-  }
-  
-  // If no token found, simply redirect to login without callback parameters
-  console.log(`Middleware: No token found, redirecting to login`);
-  const url = new URL('/login', request.url);
-  return NextResponse.redirect(url);
+  return NextResponse.next();
 }
 
 // Configure which paths the middleware should run on

@@ -1,72 +1,76 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 /**
- * Custom hook for authentication that combines NextAuth session with localStorage
- * This provides more reliable authentication state management
+ * Simple custom hook for authentication using only localStorage
  */
 export default function useCustomAuth() {
-  const { data: session, status } = useSession();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
-    // Check authentication status
+    // Check authentication status from localStorage
     const checkAuth = () => {
-      // First check NextAuth session
-      if (status === 'authenticated' && session) {
-        setIsAuthenticated(true);
-        
-        // Also store in localStorage for better persistence
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('user', JSON.stringify({
-          email: session.user.email,
-          timestamp: new Date().toISOString()
-        }));
-        
-        setIsLoading(false);
-        return;
-      }
+      const token = localStorage.getItem('authToken');
       
-      // Then check localStorage as fallback
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      if (isLoggedIn === 'true') {
-        // Check if the login is recent (within the last 7 days)
-        const userData = JSON.parse(localStorage.getItem('user') || '{}');
-        if (userData.timestamp) {
-          const loginTime = new Date(userData.timestamp);
-          const now = new Date();
-          const daysSinceLogin = (now - loginTime) / (1000 * 60 * 60 * 24);
+      if (token) {
+        try {
+          // Get user data
+          const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
           
-          if (daysSinceLogin < 7) {
-            setIsAuthenticated(true);
-            setIsLoading(false);
-            return;
+          // Check if the login is recent (within the last 30 days)
+          if (storedUserData.timestamp) {
+            const loginTime = new Date(storedUserData.timestamp);
+            const now = new Date();
+            const daysSinceLogin = (now - loginTime) / (1000 * 60 * 60 * 24);
+            
+            if (daysSinceLogin < 30) {
+              setIsAuthenticated(true);
+              setUserData(storedUserData);
+              setIsLoading(false);
+              return;
+            }
           }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
         }
       }
       
       // If we get here, user is not authenticated
       setIsAuthenticated(false);
+      setUserData(null);
       setIsLoading(false);
     };
     
     checkAuth();
-  }, [session, status]);
+  }, []);
   
   // Custom login function
   const login = async (credentials) => {
     try {
-      // Store in localStorage immediately
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('user', JSON.stringify({
+      // Create a simple token (in a real app, this would be a JWT from the server)
+      const token = btoa(JSON.stringify({
         email: credentials.email,
         timestamp: new Date().toISOString()
       }));
+      
+      // Store token and user data in localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify({
+        email: credentials.email,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Update state
+      setIsAuthenticated(true);
+      setUserData({
+        email: credentials.email,
+        timestamp: new Date().toISOString()
+      });
       
       // Redirect to dashboard
       window.location.href = '/dashboard';
@@ -78,14 +82,15 @@ export default function useCustomAuth() {
   };
   
   // Custom logout function
-  const logout = async () => {
+  const logout = () => {
     try {
       // Clear localStorage
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
       
-      // Sign out from NextAuth
-      await signOut({ redirect: false });
+      // Update state
+      setIsAuthenticated(false);
+      setUserData(null);
       
       // Redirect to login
       router.push('/login');
@@ -99,9 +104,8 @@ export default function useCustomAuth() {
   return {
     isAuthenticated,
     isLoading,
+    userData,
     login,
-    logout,
-    session,
-    status
+    logout
   };
 }

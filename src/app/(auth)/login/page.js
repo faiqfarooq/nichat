@@ -1,22 +1,35 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import LoginForm from "@/components/auth/LoginForm";
-import useCustomAuth from "@/hooks/useCustomAuth";
 
 export default function LoginPage() {
-  const { isAuthenticated, isLoading } = useCustomAuth();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      // Simple redirect to dashboard
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    
+    if (token) {
+      // Redirect to dashboard
       router.push("/dashboard");
     }
-  }, [isAuthenticated, isLoading, router]);
+    
+    setIsLoading(false);
+  }, [router]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-dark flex flex-col">
