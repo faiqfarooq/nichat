@@ -69,7 +69,14 @@ const LoginForm = () => {
       setTimeout(() => {
         // Use window.location for a hard redirect instead of router.replace
         // This ensures a complete page reload which helps with session persistence in production
-        window.location.href = searchParams.get('callbackUrl') || '/dashboard';
+        const callbackUrl = searchParams.get('callbackUrl');
+        
+        // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, redirect to dashboard
+        if (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = callbackUrl;
+        }
       }, 1500);
     } catch (error) {
       console.error('Login error:', error);
@@ -221,8 +228,13 @@ const LoginForm = () => {
               const params = new URLSearchParams(window.location.search);
               const callbackUrl = params.get('callbackUrl');
               
+              // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
+              const redirectUrl = (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) 
+                ? '/dashboard' 
+                : callbackUrl;
+              
               signIn('google', { 
-                callbackUrl: callbackUrl || '/dashboard',
+                callbackUrl: redirectUrl,
                 redirect: true // Force a server-side redirect
               });
             }}

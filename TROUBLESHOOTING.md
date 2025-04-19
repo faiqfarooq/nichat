@@ -93,6 +93,77 @@ If you encounter issues with authentication:
 2. Check that your OAuth providers (if used) are properly configured.
 3. Verify that your database connection is working.
 
+### Error: Not redirecting after login
+
+If you're not being redirected to the dashboard or other pages after login:
+
+1. Check that your NextAuth.js configuration has the correct `baseUrl` and `callbackUrl` settings.
+2. Ensure the cookie settings match between NextAuth configuration and middleware.
+3. For production deployments, make sure secure cookies are properly configured:
+   ```javascript
+   // In NextAuth config
+   cookies: {
+     sessionToken: {
+       name: process.env.NODE_ENV === 'production' 
+         ? `__Secure-next-auth.session-token` 
+         : `next-auth.session-token`,
+       options: {
+         httpOnly: true,
+         sameSite: 'lax',
+         path: '/',
+         secure: process.env.NODE_ENV === 'production',
+         maxAge: 30 * 24 * 60 * 60, // 30 days
+       },
+     },
+   }
+   
+   // In middleware.js
+   token = await getToken({
+     req: request,
+     secret: process.env.NEXTAUTH_SECRET,
+     secureCookie: process.env.NODE_ENV === "production",
+     cookieName: process.env.NODE_ENV === "production" 
+       ? "__Secure-next-auth.session-token" 
+       : "next-auth.session-token",
+   });
+   ```
+4. Try using a hard redirect with `window.location.href` instead of Next.js router for login redirects.
+5. Ensure your NEXTAUTH_URL environment variable is correctly set in production.
+
+### Error: URL shows login?callbackUrl=/dashboard instead of /dashboard
+
+If after login, your URL shows `login?callbackUrl=/dashboard` instead of redirecting to `/dashboard`:
+
+1. Make sure your login form properly handles the callbackUrl parameter:
+   ```javascript
+   // In your login form component
+   const callbackUrl = searchParams.get('callbackUrl');
+   
+   // Check if the callbackUrl is valid
+   if (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) {
+     window.location.href = '/dashboard';
+   } else {
+     window.location.href = callbackUrl;
+   }
+   ```
+
+2. Ensure your middleware properly handles the callbackUrl parameter:
+   ```javascript
+   // In middleware.js
+   const pathname = request.nextUrl.pathname;
+   if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
+     const callbackUrl = encodeURIComponent(pathname);
+     const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
+     return NextResponse.redirect(url);
+   } else {
+     // Just redirect to login without a callback
+     const url = new URL('/login', request.url);
+     return NextResponse.redirect(url);
+   }
+   ```
+
+3. Check that your login page component also handles the callbackUrl properly when already authenticated.
+
 ## Database Connection Issues
 
 ### Error: MongoDB connection errors
@@ -143,6 +214,21 @@ If you have issues deploying to a hosting platform:
 1. Check the platform's documentation for specific requirements.
 2. Make sure all environment variables are set in the hosting platform.
 3. Verify that the build command and output directory are correctly configured.
+
+### Error: Authentication issues in production
+
+If you're experiencing authentication issues specifically in production:
+
+1. Ensure your NEXTAUTH_URL environment variable is correctly set to your production URL.
+2. Verify that NEXTAUTH_SECRET is properly set and matches between development and production.
+3. Check that your cookies are configured for secure usage in production:
+   - Cookie names should be prefixed with `__Secure-` in production
+   - Cookie options should have `secure: true` in production
+   - SameSite should be set to 'lax' or 'strict'
+4. Make sure your API routes are accessible from your production domain.
+5. If using OAuth providers, ensure the callback URLs are correctly configured for your production domain.
+6. For redirection issues after login, try using `window.location.href` for hard redirects instead of Next.js router.
+7. Increase the session token maxAge to improve persistence (30 days is recommended).
 
 ## Still Having Issues?
 

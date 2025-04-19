@@ -14,7 +14,7 @@ import { getApiBaseUrl } from "@/lib/apiUtils";
 const baseUrl =
   process.env.NODE_ENV === "production"
     ? process.env.NEXTAUTH_URL || "https://nichat.ninjacodex.co"
-    : process.env.NEXTAUTH_URL;
+    : process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 export const authOptions = {
   // Set the base URL for NextAuth
@@ -22,7 +22,9 @@ export const authOptions = {
   // Increase cookie max age to improve session persistence
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: process.env.NODE_ENV === 'production' 
+        ? `__Secure-next-auth.session-token` 
+        : `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
