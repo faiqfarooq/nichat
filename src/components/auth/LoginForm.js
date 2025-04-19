@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/lib/apiUtils';
+import useCustomAuth from '@/hooks/useCustomAuth';
 
 const LoginForm = () => {
   const router = useRouter();
@@ -35,6 +36,9 @@ const LoginForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Use our custom auth hook
+  const { login } = useCustomAuth();
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -65,25 +69,12 @@ const LoginForm = () => {
       // Show success message
       setSuccess('Login successful! Redirecting...');
       
-      // Store authentication data in localStorage for better persistence
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('user', JSON.stringify({
+      // Use our custom login function
+      await login({
         email: formData.email,
-        timestamp: new Date().toISOString()
-      }));
+        password: formData.password
+      });
       
-      // Determine redirect URL
-      const callbackUrl = searchParams.get('callbackUrl');
-      
-      // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
-      const redirectUrl = (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) 
-        ? '/dashboard' 
-        : callbackUrl;
-      
-      // Use window.location for a hard redirect
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
@@ -230,17 +221,9 @@ const LoginForm = () => {
         <div className="mt-6">
           <button
             onClick={() => {
-              // Check for callbackUrl in the URL
-              const params = new URLSearchParams(window.location.search);
-              const callbackUrl = params.get('callbackUrl');
-              
-              // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
-              const redirectUrl = (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) 
-                ? '/dashboard' 
-                : callbackUrl;
-              
+              // Simple redirect to dashboard
               signIn('google', { 
-                callbackUrl: redirectUrl,
+                callbackUrl: '/dashboard',
                 redirect: true // Force a server-side redirect
               });
             }}
