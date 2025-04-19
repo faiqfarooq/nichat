@@ -10,15 +10,8 @@ import { getApiBaseUrl } from "@/lib/apiUtils";
 /**
  * NextAuth configuration
  */
-// Determine the base URL for NextAuth
-const baseUrl =
-  process.env.NODE_ENV === "production"
-    ? process.env.NEXTAUTH_URL || "https://nichat.ninjacodex.co"
-    : process.env.NEXTAUTH_URL || "http://localhost:3000";
-
 export const authOptions = {
-  // Set the base URL for NextAuth
-  baseUrl,
+  // No need to set baseUrl, NextAuth will use the current URL
   // Increase cookie max age to improve session persistence
   // Don't explicitly set cookie names to let NextAuth handle it based on environment
   cookies: {

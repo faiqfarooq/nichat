@@ -11,10 +11,9 @@ export function getApiBaseUrl() {
     return window.location.origin;
   }
   
-  // In server environment
-  return process.env.NODE_ENV === 'production' 
-    ? process.env.NEXTAUTH_URL || 'https://nichat.ninjacodex.co'
-    : process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  // In server environment, use a relative URL
+  // This will make the API use whatever domain the app is running on
+  return '';
 }
 
 /**
