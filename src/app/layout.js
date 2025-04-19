@@ -1,5 +1,5 @@
 import "./globals.css";
-import AuthProvider from "@/providers/AuthProvider";
+import CustomSessionProvider from "@/components/auth/CustomSessionProvider";
 import SocketProvider from "@/providers/SocketProvider";
 import { CloudinaryProvider } from "@/providers/CloudinaryProvider";
 import ReduxProvider from "@/providers/ReduxProvider";
@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-dark text-white min-h-screen">
-        <AuthProvider>
+        <CustomSessionProvider>
           <ReduxProvider>
             <SocketProvider>
               <CloudinaryProvider>
@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
               </CloudinaryProvider>
             </SocketProvider>
           </ReduxProvider>
-        </AuthProvider>
+        </CustomSessionProvider>
       </body>
     </html>
   );

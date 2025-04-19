@@ -64,19 +64,10 @@ export async function middleware(request) {
     return NextResponse.next();
   }
   
-  // If no token found, redirect to login with callback URL
+  // If no token found, simply redirect to login without callback parameters
   console.log(`Middleware: No token found, redirecting to login`);
-  
-  // Only use callbackUrl if it's not the login page itself or doesn't already have a callbackUrl
-  if (!pathname.includes('/login') && !pathname.includes('callbackUrl')) {
-    const callbackUrl = encodeURIComponent(pathname);
-    const url = new URL(`/login?callbackUrl=${callbackUrl}`, request.url);
-    return NextResponse.redirect(url);
-  } else {
-    // Just redirect to login without a callback
-    const url = new URL('/login', request.url);
-    return NextResponse.redirect(url);
-  }
+  const url = new URL('/login', request.url);
+  return NextResponse.redirect(url);
 }
 
 // Configure which paths the middleware should run on

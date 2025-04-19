@@ -1,30 +1,22 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import LoginForm from "@/components/auth/LoginForm";
+import useCustomAuth from "@/hooks/useCustomAuth";
 
 export default function LoginPage() {
-  const { status } = useSession();
-
+  const { isAuthenticated, isLoading } = useCustomAuth();
   const router = useRouter();
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
-    if (status === "authenticated") {
-      // Get the intended destination from URL or default to dashboard
-      const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl');
-      
-      // If the callbackUrl is to the login page or contains a callbackUrl parameter itself, use dashboard
-      if (!callbackUrl || callbackUrl.includes('/login') || callbackUrl.includes('callbackUrl')) {
-        router.push("/dashboard");
-      } else {
-        router.push(callbackUrl);
-      }
+    if (isAuthenticated && !isLoading) {
+      // Simple redirect to dashboard
+      router.push("/dashboard");
     }
-  }, [status, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   return (
     <div className="min-h-screen bg-dark flex flex-col">

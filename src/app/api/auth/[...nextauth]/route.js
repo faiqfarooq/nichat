@@ -251,36 +251,7 @@ export const authOptions = {
     async redirect({ url, baseUrl }) {
       console.log(`Redirect callback called with url: ${url}, baseUrl: ${baseUrl}`);
       
-      // If the URL is a callback URL with login in it, extract the callback URL
-      if (url.includes('/login') && url.includes('callbackUrl')) {
-        try {
-          const urlObj = new URL(url);
-          const callbackUrl = urlObj.searchParams.get('callbackUrl');
-          
-          // If the callback URL is valid and not a login page, use it
-          if (callbackUrl && !callbackUrl.includes('/login') && !callbackUrl.includes('callbackUrl')) {
-            console.log(`Redirecting to extracted callback URL: ${callbackUrl}`);
-            return callbackUrl.startsWith('/') ? `${baseUrl}${callbackUrl}` : callbackUrl;
-          }
-        } catch (error) {
-          console.error('Error parsing URL:', error);
-        }
-      }
-      
-      // If the URL is the login page or has issues, redirect to dashboard
-      if (url.includes('/login')) {
-        console.log(`URL includes login, redirecting to dashboard`);
-        return `${baseUrl}/dashboard`;
-      }
-      
-      // If the URL is already a valid URL, use it
-      if (url.startsWith(baseUrl) || url.startsWith('http')) {
-        console.log(`Using provided URL: ${url}`);
-        return url;
-      }
-      
-      // Default to dashboard
-      console.log(`Defaulting to dashboard`);
+      // Simple redirect to dashboard for all cases
       return `${baseUrl}/dashboard`;
     },
     async signIn({ user, account }) {
