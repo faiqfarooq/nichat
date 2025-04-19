@@ -47,36 +47,30 @@ const LoginForm = () => {
       setLoading(true);
       setError('');
 
-      // Use signIn without redirect to handle errors
       const result = await signIn('credentials', {
         redirect: false,
         email: formData.email,
         password: formData.password,
       });
 
-      console.log('SignIn result:', result);
-
-      if (result.error) {
-        // Check for verification error
+      if (result?.error) {
+        // Check if the error is about email verification
         if (result.error.includes('verify your email')) {
-          setError(result.error);
           setEmailToResend(formData.email);
           setShowResendLink(true);
-        } else {
-          setError(result.error);
         }
-        return;
+        throw new Error(result.error);
       }
 
-      // If successful, redirect manually
+      // Show success message
       setSuccess('Login successful! Redirecting...');
       
-      // Check for callbackUrl in the URL
-      const searchParams = new URLSearchParams(window.location.search);
-      const callbackUrl = searchParams.get('callbackUrl');
-      
-      // Redirect to callbackUrl if it exists, otherwise to chat
-      router.push(callbackUrl || '/chat');
+      // Add a longer delay before redirecting to ensure the session is properly set in production
+      setTimeout(() => {
+        // Use window.location for a hard redirect instead of router.replace
+        // This ensures a complete page reload which helps with session persistence in production
+        window.location.href = '/chat';
+      }, 1500);
     } catch (error) {
       console.error('Login error:', error);
       setError('An unexpected error occurred. Please try again.');
