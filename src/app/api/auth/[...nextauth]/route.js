@@ -19,6 +19,19 @@ const baseUrl =
 export const authOptions = {
   // Set the base URL for NextAuth
   baseUrl,
+  // Increase cookie max age to improve session persistence
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -286,6 +299,7 @@ export const authOptions = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
