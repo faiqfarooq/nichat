@@ -4,6 +4,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import User from "@/lib/mongodb/models/User";
 import connectDB from "@/lib/mongodb";
 
+// This config is needed for routes that use dynamic features like headers
+export const dynamic = 'force-dynamic';
+
 // Handler for getting contacts
 export async function GET(request) {
   try {

@@ -1,9 +1,12 @@
 // src/api/users/search/route.js
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 import User from "@/lib/mongodb/models/User";
 import { authOptions } from "../../auth/[...nextauth]/route";
+
+// This config is needed for routes that use dynamic features like headers and request.url
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {

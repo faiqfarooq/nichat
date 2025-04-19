@@ -1,10 +1,4 @@
 import "./globals.css";
-import AuthProvider from "@/components/auth/CustomSessionProvider";
-import SocketProvider from "@/providers/SocketProvider";
-import { CloudinaryProvider } from "@/providers/CloudinaryProvider";
-import ReduxProvider from "@/providers/ReduxProvider";
-import CallNotificationProvider from "@/providers/CallNotificationProvider";
-import MainLayout from "@/components/layout/MainLayout";
 
 export const metadata = {
   title: "nichat | A modern messaging application",
@@ -16,21 +10,14 @@ export const metadata = {
   },
 };
 
+// Force dynamic rendering for all pages
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-dark text-white min-h-screen">
-        <AuthProvider>
-          <ReduxProvider>
-            <SocketProvider>
-              <CloudinaryProvider>
-                <CallNotificationProvider>
-                  <MainLayout>{children}</MainLayout>
-                </CallNotificationProvider>
-              </CloudinaryProvider>
-            </SocketProvider>
-          </ReduxProvider>
-        </AuthProvider>
+        {children}
       </body>
     </html>
   );

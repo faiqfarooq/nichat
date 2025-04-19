@@ -5,6 +5,9 @@ import connectDB from "@/lib/mongodb";
 import Message from "@/lib/mongodb/models/Message";
 import Chat from "@/lib/mongodb/models/Chat";
 
+// This config is needed for routes that use dynamic features like headers
+export const dynamic = 'force-dynamic';
+
 // Handler for creating a chat backup
 export async function GET(request) {
   try {
