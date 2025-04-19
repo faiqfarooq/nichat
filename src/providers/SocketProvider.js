@@ -1,21 +1,21 @@
 'use client';
 
 import { createContext, useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import io from 'socket.io-client';
 import { getApiUrl } from '@/lib/apiUtils';
+import { useSession } from '@/components/auth/CustomSessionProvider';
 
 // Create context
 export const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     // Only initialize socket if user is authenticated
-    if (!session?.user) {
+    if (status !== 'authenticated' || !session) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -72,7 +72,7 @@ export const SocketProvider = ({ children }) => {
       setSocket(null);
       setIsConnected(false);
     };
-  }, [session]);
+  }, [session, status, socket]);
 
   // Custom reconnect function
   const reconnect = () => {

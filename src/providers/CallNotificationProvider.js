@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/components/auth/CustomSessionProvider';
 
 // Create context
 const CallNotificationContext = createContext();

@@ -91,12 +91,9 @@ export async function sendVerificationEmail(
   name,
   isEmailChange = false
 ) {
-  // Construct the verification URL with absolute URL in production or relative in development
-  const baseUrl =
-    process.env.NODE_ENV === "production"
-      ? process.env.NEXTAUTH_URL || "https://https://nichat.ninjacodex.co"
-      : "";
-  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
+  // Construct the verification URL with the current domain
+  // This will be determined by the request in the API route
+  const verificationUrl = `/verify-email?token=${token}`;
   const transporter = getEmailTransporter();
 
   const subject = isEmailChange

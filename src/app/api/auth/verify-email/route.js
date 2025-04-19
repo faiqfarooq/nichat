@@ -3,6 +3,9 @@ import User from "@/lib/mongodb/models/User";
 import connectDB from "@/lib/mongodb";
 import { verifyVerificationToken } from "@/lib/token";
 
+// This config is needed for routes that use dynamic features like headers or cookies
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     // Get token from query parameters
@@ -56,16 +59,14 @@ export async function GET(request) {
     user.verificationTokenExpires = undefined;
     await user.save();
 
-    // Determine the base URL for redirection
-    const baseUrl =
-      process.env.NODE_ENV === "production"
-        ? process.env.NEXTAUTH_URL || "https://https://nichat.ninjacodex.co"
-        : "";
-
+    // Get the host from the request
+    const host = request.headers.get('host');
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    
     // Construct the full redirect URL
     const redirectUrl = isEmailChange
-      ? `${baseUrl}/settings?emailChanged=true`
-      : `${baseUrl}/login?verified=true`;
+      ? `${protocol}://${host}/settings?emailChanged=true`
+      : `${protocol}://${host}/login?verified=true`;
 
     // Redirect to appropriate page with success message
     return NextResponse.redirect(redirectUrl);

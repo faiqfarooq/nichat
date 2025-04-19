@@ -1,54 +1,77 @@
-'use client';
+"use client";
 
-import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react';
-import { useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { createContext, useContext, useEffect, useState } from 'react';
 
-/**
- * Custom SessionProvider that wraps NextAuth's SessionProvider
- * This component adds additional functionality to handle redirection issues
- */
-export default function CustomSessionProvider({ children, session }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  
-  // Handle redirection issues by checking localStorage on mount
+// Create a context for the session
+const SessionContext = createContext(null);
+
+export function CustomSessionProvider({ children }) {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    // If we're on a protected route and not authenticated according to localStorage,
-    // redirect to login
-    const isProtectedRoute = 
-      pathname?.startsWith('/chat') ||
-      pathname?.startsWith('/profile') ||
-      pathname?.startsWith('/group') ||
-      pathname?.startsWith('/search') ||
-      pathname?.startsWith('/dashboard') ||
-      pathname?.startsWith('/notifications') ||
-      pathname?.startsWith('/settings');
-      
-    const isLoginRoute = pathname?.startsWith('/login');
+    // Check if user is authenticated using localStorage
+    const authToken = localStorage.getItem('authToken');
     
-    // Check localStorage for authentication
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    
-    if (isProtectedRoute && !isLoggedIn) {
-      // Redirect to login if not authenticated
-      router.push('/login');
-    } else if (isLoginRoute && isLoggedIn) {
-      // Redirect to dashboard if already authenticated
-      router.push('/dashboard');
+    if (authToken) {
+      try {
+        // Parse user data from localStorage
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        
+        // Create a session object similar to NextAuth
+        setSession({
+          user: {
+            id: userData.id || 'unknown',
+            name: userData.name || 'User',
+            email: userData.email || '',
+            image: userData.avatar || '',
+            ...userData
+          },
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+        });
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        setSession(null);
+      }
+    } else {
+      setSession(null);
     }
     
-    // Clean up any callback parameters from the URL
-    if (window.location.search.includes('callbackUrl')) {
-      // Remove the callbackUrl parameter by replacing the URL without reloading the page
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+    setLoading(false);
+  }, []);
+
+  // Function to update session (for login/logout)
+  const updateSession = (newSession) => {
+    setSession(newSession);
+    
+    if (newSession) {
+      // Store auth token and user data in localStorage
+      localStorage.setItem('authToken', newSession.authToken || 'token');
+      localStorage.setItem('userData', JSON.stringify(newSession.user || {}));
+    } else {
+      // Clear localStorage on logout
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
     }
-  }, [pathname, router]);
-  
+  };
+
   return (
-    <NextAuthSessionProvider session={session}>
+    <SessionContext.Provider value={{ data: session, status: loading ? 'loading' : session ? 'authenticated' : 'unauthenticated', update: updateSession }}>
       {children}
-    </NextAuthSessionProvider>
+    </SessionContext.Provider>
   );
 }
+
+// Custom hook to use the session
+export function useSession() {
+  const context = useContext(SessionContext);
+  
+  if (context === undefined) {
+    throw new Error('useSession must be used within a CustomSessionProvider');
+  }
+  
+  return context;
+}
+
+// Export the context for direct access if needed
+export { SessionContext };
